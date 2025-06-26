@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/layout :: layout(~{::head}, ~{::body/content}, ~{::body/scripts})}">
+<head>
+    <title>用戶登入</title>
+</head>
+<body>
+
+<th:block th:fragment="content">
+    <h1 class="text-center mb-4">登入</h1>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <form th:action="@{/login}" method="post">
+                <div class="mb-3">
+                    <label for="email" class="form-label">信箱:</label>
+                    <input type="text" id="email" name="email" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">密碼:</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+
+                <div th:if="${error}" class="alert alert-danger" role="alert">
+                    <p th:text="${error}"></p>
+                </div>
+                <div th:if="${param.error}" class="alert alert-danger" role="alert">
+                    <p>登入失敗，請檢查您的信箱或密碼是否正確。</p>
+                </div>
+                <div th:if="${param.logout}" class="alert alert-info" role="alert">
+                    <p>您已成功登出。</p>
+                </div>
+                <div th:if="${param.emailSent}" class="alert alert-success" role="alert">
+                    <p>驗證信已發送，請檢查您的信箱以啟用帳戶。</p>
+                </div>
+
+
+                <button type="submit" class="btn btn-primary w-100">登入</button>
+            </form>
+
+            <div class="mt-3 text-center">
+                <p>還沒有帳號嗎？ <a href="/register">立即註冊</a></p>
+                <p><a href="/forgot-password">忘記密碼？</a></p>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+<th:block th:fragment="scripts">
+</th:block>
+
+</body>
+</html>

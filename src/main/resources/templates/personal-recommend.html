@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-TW" xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/layout :: layout(~{::head}, ~{::body/content}, ~{::body/scripts})}">
+<head>
+    <title>個人推薦</title>
+</head>
+<body>
+
+<th:block th:fragment="content">
+    <div class="container mt-5">
+        <h2 class="mb-4" th:if="${userName}">
+            <span th:text="${userName}"></span>
+            <span>推薦餐廳</span>
+        </h2>
+
+        <div class="mb-3 text-end">
+            <a th:href="@{/personal-recommend/add}" class="btn btn-success">新增</a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            <div class="col" th:each="rec : ${recommend}">
+                <div class="card h-100 shadow-sm">
+                    <a th:href="${rec.googleMapsUrl}" target="_blank" th:if="${rec.googleMapsUrl}">
+                        <img th:src="${rec.storePhotoUrl}" class="card-img-top" alt="店家圖片">
+                    </a>
+                    <a th:unless="${rec.googleMapsUrl}"> <img th:src="${rec.storePhotoUrl}" class="card-img-top" alt="店家圖片">
+                    </a>
+
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${rec.storeName}">店家名稱</h5>
+                        <p class="card-text" th:text="${rec.storeAddress}">店家地址</p>
+                        <p class="card-text"><small class="text-muted" th:text="${rec.reason}">推薦理由</small></p>
+                        <p class="rating-stars">
+                            <span th:each="i : ${#numbers.sequence(1, rec.score)}" class="text-warning">★</span>
+                            <span th:each="i : ${#numbers.sequence(1, 5 - rec.score)}" class="text-secondary">☆</span>
+                        </p>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a th:href="@{/personal-recommend/edit/{storeId}(storeId=${rec.storeId})}" class="btn btn-sm btn-outline-primary">編輯</a>
+                        <form th:action="@{/personal-recommend/delete/{storeId}(storeId=${rec.storeId})}" method="post">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('確定要刪除這筆推薦嗎？');">刪除</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div th:if="${#lists.isEmpty(recommend)}" class="col-12">
+                <p class="text-center text-muted">您還沒有任何推薦。</p>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+</body>
+</html>
