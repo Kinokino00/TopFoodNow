@@ -12,5 +12,7 @@ public interface StoreRepository extends JpaRepository<StoreModel, Integer> {
     @Query(value = "SELECT * FROM store ORDER BY RAND() LIMIT 6", nativeQuery = true)
     List<StoreModel> findRandom6Stores();
 
+    List<StoreModel> findTop6ByOrderByCreatedAtDesc();
+
     Optional<StoreModel> findByName(String name);
 }

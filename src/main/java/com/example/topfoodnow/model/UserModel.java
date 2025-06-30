@@ -34,6 +34,10 @@ public class UserModel {
     @NotBlank(message = "名稱不可為空")
     private String userName;
 
+    @Column(name = "is_famous", nullable = false, columnDefinition = "BIT(1) DEFAULT 0")
+    @NonNull
+    private boolean isFamous;
+
     @Column(nullable = false)
     @NonNull
     private boolean enabled;

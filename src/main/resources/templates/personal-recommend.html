@@ -17,13 +17,9 @@
         </div>
 
         <div class="row row-cols-1 row-cols-md-3 g-4">
-            <div class="col" th:each="rec : ${recommend}">
+            <div class="col" th:each="rec : ${recommends}">
                 <div class="card h-100 shadow-sm">
-                    <a th:href="${rec.googleMapsUrl}" target="_blank" th:if="${rec.googleMapsUrl}">
-                        <img th:src="${rec.storePhotoUrl}" class="card-img-top" alt="店家圖片">
-                    </a>
-                    <a th:unless="${rec.googleMapsUrl}"> <img th:src="${rec.storePhotoUrl}" class="card-img-top" alt="店家圖片">
-                    </a>
+                    <img th:src="${rec.storePhotoUrl}" class="card-img-top" alt="店家圖片">
 
                     <div class="card-body">
                         <h5 class="card-title" th:text="${rec.storeName}">店家名稱</h5>
@@ -37,13 +33,12 @@
                     <div class="card-footer d-flex justify-content-between">
                         <a th:href="@{/personal-recommend/edit/{storeId}(storeId=${rec.storeId})}" class="btn btn-sm btn-outline-primary">編輯</a>
                         <form th:action="@{/personal-recommend/delete/{storeId}(storeId=${rec.storeId})}" method="post">
-                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                    onclick="return confirm('確定要刪除這筆推薦嗎？');">刪除</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('確定要刪除這筆推薦嗎？');">刪除</button>
                         </form>
                     </div>
                 </div>
             </div>
-            <div th:if="${#lists.isEmpty(recommend)}" class="col-12">
+            <div th:if="${#lists.isEmpty(recommends)}" class="col-12">
                 <p class="text-center text-muted">您還沒有任何推薦。</p>
             </div>
         </div>

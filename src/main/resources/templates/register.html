@@ -1,61 +1,39 @@
 <!DOCTYPE html>
-<html lang="zh-TW" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(headExtra, content, bodyExtra)">
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/layout :: layout(~{::head}, ~{::body/content}, ~{::body/scripts})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <title th:text="${pageTitle} ?: '餐廳推薦'"></title>
-    <th:block th:replace="${headExtra} ?: ~{}"></th:block>
+    <title>註冊</title>
 </head>
-
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-    <div class="container">
-        <a class="navbar-brand" href="/">餐廳推薦</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto"></ul>
-            <ul class="navbar-nav">
-                <th:block th:if="${session.user != null}">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userMenu"
-                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <span th:text="${session.user.userName}"></span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                            <li><a class="dropdown-item" href="/personal-recommend">我的推薦</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/logout">登出</a></li>
-                        </ul>
-                    </li>
-                </th:block>
-                <th:block th:unless="${session.user != null}">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/login">登入</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/register">註冊</a>
-                    </li>
-                </th:block>
-            </ul>
-        </div>
+<th:block th:fragment="content">
+    <h1 class="text-center mb-4">註冊</h1>
+    <div class="row justify-content-center">
+        <form class="col-md-6" th:action="@{/register}" method="post" th:object="${user}">
+            <div class="mb-3">
+                <label for="username" class="form-label">用戶名:</label>
+                <input type="text" id="username" class="form-control" th:field="*{userName}" required>
+                <div th:if="${#fields.hasErrors('userName')}" th:errors="*{userName}" class="text-danger"></div>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email:</label>
+                <input type="text" id="email" class="form-control" th:field="*{email}" required>
+                <div th:if="${#fields.hasErrors('password')}" th:errors="*{email}" class="text-danger"></div>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">密碼:</label>
+                <input type="password" id="password" class="form-control" th:field="*{password}" required>
+                <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="text-danger"></div>
+            </div>
+            <div th:if="${error}" class="alert alert-danger" role="alert" th:text="${error}"></div>
+            <button type="submit" class="btn btn-primary w-100">註冊</button>
+        </form>
+
+        <p class="mt-3 text-center">已有帳號？ <a href="/login">登入</a></p>
     </div>
-</nav>
+</th:block>
 
-<div class="container my-4">
-    <th:block th:replace="${content}"></th:block>
-</div>
-
-<footer class="mt-5 py-3 bg-light text-center">
-    <p class="mb-0">© 2025 餐廳推薦網站</p>
-</footer>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<th:block th:replace="${bodyExtra} ?: ~{}"></th:block>
+<th:block th:fragment="scripts">
+</th:block>
 
 </body>
 </html>

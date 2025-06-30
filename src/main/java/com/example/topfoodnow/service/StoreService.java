@@ -16,6 +16,10 @@ public class StoreService {
         return storeRepository.findRandom6Stores();
     }
 
+    public List<StoreModel> findTop6ByOrderByCreatedAtDesc() {
+        return storeRepository.findTop6ByOrderByCreatedAtDesc();
+    }
+
     public Optional<StoreModel> getStoreById(Integer id) {
         return storeRepository.findById(id);
     }

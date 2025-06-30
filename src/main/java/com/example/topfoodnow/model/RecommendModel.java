@@ -10,13 +10,21 @@ import java.time.LocalDateTime;
 @Data
 public class RecommendModel {
     @Id
-    @ManyToOne // 多對一
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserModel user;
+    @Column(name = "user_id", nullable = false)
+    private Integer userId;
 
     @Id
-    @ManyToOne // 多對一
-    @JoinColumn(name = "store_id", nullable = false)
+    @Column(name = "store_id", nullable = false)
+    private Integer storeId;
+
+    @ManyToOne(fetch = FetchType.LAZY) // 多對一，延遲載入
+    @MapsId("userId")
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private UserModel user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("storeId")
+    @JoinColumn(name = "store_id", insertable = false, updatable = false)
     private StoreModel store;
 
     @Column(nullable = false, length = 500)

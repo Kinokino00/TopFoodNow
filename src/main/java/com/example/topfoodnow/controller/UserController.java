@@ -1,7 +1,6 @@
 package com.example.topfoodnow.controller;
 
 import com.example.topfoodnow.dto.RecommendDTO;
-import com.example.topfoodnow.dto.RecommendDTO.NewStoreValidation;
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.model.StoreModel;
 import com.example.topfoodnow.service.UserService;
@@ -9,6 +8,7 @@ import com.example.topfoodnow.service.MailService;
 import com.example.topfoodnow.service.StoreService;
 import com.example.topfoodnow.service.RecommendService;
 import com.example.topfoodnow.service.FileStorageService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
@@ -50,12 +49,10 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public String registerProcess(
-            @Valid UserModel user,
-            BindingResult bindingResult,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-
+    public String registerProcess(@Valid UserModel user,
+                                  BindingResult bindingResult,
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             logger.warn("註冊表單驗證失敗，錯誤數量: {}", bindingResult.getErrorCount());
             return "register";
@@ -68,13 +65,11 @@ public class UserController {
                 model.addAttribute("user", user);
                 return "register";
             }
-
             userService.addUser(user);
             logger.info("新用戶 {} 註冊成功，驗證信已發送。", user.getEmail());
             redirectAttributes.addFlashAttribute("email", user.getEmail());
             return "redirect:/register-success";
         } catch (Exception e) {
-            // 使用 logger.error() 記錄錯誤訊息和堆疊追蹤
             logger.error("用戶註冊失敗，Email: {}. 錯誤訊息: {}", user.getEmail(), e.getMessage(), e);
             redirectAttributes.addFlashAttribute("error", "註冊失敗，請稍後再試。");
             return "redirect:/register";
@@ -89,13 +84,11 @@ public class UserController {
 
 
     @GetMapping("/login")
-    public String showLoginPage(
-            @RequestParam(value = "error", required = false) String error,
-            @RequestParam(value = "logout", required = false) String logout,
-            @RequestParam(value = "emailSent", required = false) String emailSent,
-            Model model) {
+    public String showLoginPage(@RequestParam(value = "error", required = false) String error,
+                                @RequestParam(value = "logout", required = false) String logout,
+                                @RequestParam(value = "emailSent", required = false) String emailSent,
+                                Model model) {
         model.addAttribute("pageTitle", "用戶登入");
-
         if (error != null) {
             logger.warn("登入頁面顯示錯誤訊息：{}", error);
             model.addAttribute("error", "信箱或密碼錯誤，請再試一次。");
@@ -112,17 +105,14 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public String loginProcess(
-            @RequestParam String email,
-            @RequestParam String password,
-            HttpSession session,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-
+    public String loginProcess(@RequestParam String email,
+                               @RequestParam String password,
+                               HttpSession session,
+                               Model model,
+                               RedirectAttributes redirectAttributes) {
         model.addAttribute("pageTitle", "用戶登入");
 
         UserModel authenticatedUser = userService.authenticate(email, password);
-
         if (authenticatedUser != null) {
             if (!authenticatedUser.isEnabled()) {
                 logger.warn("登入嘗試失敗：用戶 {} 帳戶未啟用。", email);
@@ -159,14 +149,12 @@ public class UserController {
     }
 
     @PostMapping("/forgot-password")
-    public String forgotPasswordProcess(
-            @RequestParam("email") String email,
-            Model model,
-            RedirectAttributes redirectAttributes) {
+    public String forgotPasswordProcess(@RequestParam("email") String email,
+                                        Model model,
+                                        RedirectAttributes redirectAttributes) {
         model.addAttribute("pageTitle", "忘記密碼");
 
         Optional<UserModel> userOptional = userService.findByEmail(email);
-
         if (userOptional.isEmpty()) {
             logger.info("忘記密碼請求：Email {} 不存在於系統中。", email);
             model.addAttribute("successMessage", "如果此信箱已註冊，重設密碼連結將會發送到您的信箱。請檢查您的收件箱。");
@@ -191,8 +179,8 @@ public class UserController {
     @GetMapping("/reset-password")
     public String showResetPasswordPage(@RequestParam("token") String token, Model model) {
         model.addAttribute("pageTitle", "重設密碼");
-        Optional<UserModel> userOptional = userService.validatePasswordResetToken(token);
 
+        Optional<UserModel> userOptional = userService.validatePasswordResetToken(token);
         if (userOptional.isEmpty()) {
             logger.warn("顯示重設密碼頁面失敗：無效或已過期 Token: {}", token);
             model.addAttribute("errorMessage", "無效或已過期的重設密碼連結。請重新申請。");
@@ -204,12 +192,11 @@ public class UserController {
     }
 
     @PostMapping("/reset-password")
-    public String resetPasswordProcess(
-            @RequestParam("token") String token,
-            @RequestParam("newPassword") String newPassword,
-            @RequestParam("confirmPassword") String confirmPassword,
-            RedirectAttributes redirectAttributes,
-            Model model) {
+    public String resetPasswordProcess(@RequestParam("token") String token,
+                                       @RequestParam("newPassword") String newPassword,
+                                       @RequestParam("confirmPassword") String confirmPassword,
+                                       RedirectAttributes redirectAttributes,
+                                       Model model) {
         model.addAttribute("pageTitle", "重設密碼");
 
         if (!newPassword.equals(confirmPassword)) {
@@ -227,7 +214,6 @@ public class UserController {
         }
 
         Optional<UserModel> userOptional = userService.validatePasswordResetToken(token);
-
         if (userOptional.isEmpty()) {
             logger.warn("重設密碼處理失敗：無效或已過期 Token: {}", token);
             redirectAttributes.addFlashAttribute("errorMessage", "無效或已過期的重設密碼連結。請重新申請。");
@@ -236,7 +222,6 @@ public class UserController {
 
         UserModel user = userOptional.get();
         userService.changeUserPassword(user, newPassword);
-
         logger.info("用戶 {} 的密碼已成功重設。", user.getEmail());
         redirectAttributes.addFlashAttribute("successMessage", "您的密碼已成功重設，請使用新密碼登入。");
         return "redirect:/login";
@@ -244,17 +229,16 @@ public class UserController {
 
     // 個人推薦
     @GetMapping("/personal-recommend")
-    public String showPersonalRecommend(HttpSession session, Model model) {
+    public String showPersonalRecommend(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
         UserModel currentUser = (UserModel) session.getAttribute("user");
         if (currentUser == null) {
             logger.warn("未登入用戶嘗試訪問個人推薦頁面。");
             return "redirect:/login";
         }
-        List<RecommendDTO> recommends = recommendService.getRecommendsByUserId(currentUser);
+        List<RecommendDTO> userRecommends = recommendService.getRecommendByUserId(currentUser);
         model.addAttribute("userName", currentUser.getUserName());
-        model.addAttribute("recommends", recommends);
+        model.addAttribute("recommends", userRecommends);
         model.addAttribute("pageTitle", "我的推薦");
-        logger.info("用戶 {} 訪問個人推薦頁面，共獲取 {} 條推薦。", currentUser.getEmail(), recommends.size());
         return "personal-recommend";
     }
 
@@ -269,72 +253,72 @@ public class UserController {
     }
 
     // 處理新增推薦的提交
-    public String addRecommendProcess(
-            @ModelAttribute("recommendDTO") @Validated(NewStoreValidation.class) RecommendDTO recommendDTO,
-            BindingResult bindingResult, HttpSession session,
-            RedirectAttributes redirectAttributes, Model model) {
+    @PostMapping("/personal-recommend/add")
+    public String addRecommendProcess(@ModelAttribute("recommendDTO") @Validated RecommendDTO recommendDTO,
+                                      BindingResult bindingResult,
+                                      HttpSession session,
+                                      RedirectAttributes redirectAttributes,
+                                      Model model) {
         UserModel currentUser = (UserModel) session.getAttribute("user");
         if (currentUser == null) {
+            logger.warn("未登入用戶嘗試新增推薦。");
             return "redirect:/login";
         }
+        logger.info("當前登入用戶 ID: {}", currentUser.getId());
+        logger.info("當前登入用戶 Email: {}", currentUser.getEmail());
 
-        if (recommendDTO.getStoreName() == null || recommendDTO.getStoreName().trim().isEmpty()) {
-            bindingResult.rejectValue("storeName", "error.recommendDTO", "店家名稱不能為空！");
-        }
-        if (recommendDTO.getStoreAddress() == null || recommendDTO.getStoreAddress().trim().isEmpty()) {
-            bindingResult.rejectValue("storeAddress", "error.recommendDTO", "店家地址不能為空！");
-        }
-
-        // 圖片上傳驗證：只有在新增時且沒有現有 photoUrl 時才要求上傳
         if (recommendDTO.getStorePhoto() == null || recommendDTO.getStorePhoto().isEmpty()) {
-            // 如果是新增模式且沒有舊圖片，則要求上傳
-            if (recommendDTO.getStoreId() == null || recommendDTO.getStoreId() == -1) { // 假設-1表示新增模式
+            if (recommendDTO.getStorePhotoUrl() == null || recommendDTO.getStorePhotoUrl().isEmpty()) {
                 bindingResult.rejectValue("storePhoto", "error.recommendDTO", "請上傳店家圖片！");
             }
+        }
+
+        if (recommendDTO.getReason() == null || recommendDTO.getReason().trim().isEmpty()) {
+            bindingResult.rejectValue("reason", "error.recommendDTO", "推薦原因不能為空！");
+        }
+
+        if (recommendDTO.getScore() == null || recommendDTO.getScore() < 1 || recommendDTO.getScore() > 5) {
+            bindingResult.rejectValue("score", "error.recommendDTO", "請選擇有效的星級評分！");
         }
 
         if (bindingResult.hasErrors()) {
             logger.warn("新增推薦表單驗證失敗。");
             model.addAttribute("pageTitle", "新增我的推薦");
-            return "recommendation-form";
+            model.addAttribute("recommendDTO", recommendDTO);
+            return "recommend-form";
         }
 
         try {
-            String photoUrl = null;
             if (recommendDTO.getStorePhoto() != null && !recommendDTO.getStorePhoto().isEmpty()) {
-                photoUrl = fileStorageService.uploadFile(recommendDTO.getStorePhoto());
+                String photoUrl = fileStorageService.uploadFile(recommendDTO.getStorePhoto());
                 recommendDTO.setStorePhotoUrl(photoUrl);
             }
-
-            // 調用服務層處理新增推薦，店家查找或創建邏輯在服務層完成
             recommendService.addRecommend(recommendDTO, currentUser);
             redirectAttributes.addFlashAttribute("successMessage", "推薦新增成功！");
+            logger.info("用戶 {} 新增推薦成功，導向個人推薦列表頁。", currentUser.getEmail());
             return "redirect:/personal-recommend";
         } catch (IllegalArgumentException | EntityNotFoundException e) {
             logger.error("新增推薦失敗：{}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            model.addAttribute("pageTitle", "新增我的推薦");
-            return "recommendation-form";
+            return "redirect:/personal-recommend/add";
         } catch (Exception e) {
             logger.error("新增推薦失敗：{}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", "新增推薦失敗，請重試。");
-            model.addAttribute("pageTitle", "新增我的推薦");
-            return "recommendation-form";
+            return "redirect:/personal-recommend/add";
         }
     }
 
     // 處理刪除推薦
     @PostMapping("/personal-recommend/delete/{storeId}")
-    public String deleteRecommend(
-            @PathVariable("storeId") Integer storeId,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
+    public String deleteRecommend(@PathVariable("storeId") Integer storeId,
+                                  HttpSession session,
+                                  RedirectAttributes redirectAttributes) {
         UserModel currentUser = (UserModel) session.getAttribute("user");
         if (currentUser == null) {
             return "redirect:/login";
         }
         try {
-            recommendService.deleteRecommend(currentUser.getId(), storeId, currentUser); // Changed method name
+            recommendService.deleteRecommend(currentUser.getId(), storeId, currentUser);
             redirectAttributes.addFlashAttribute("successMessage", "推薦已成功刪除。");
         } catch (EntityNotFoundException | SecurityException e) {
             logger.error("刪除推薦失敗：{}", e.getMessage(), e);
@@ -348,76 +332,75 @@ public class UserController {
 
     // 顯示編輯推薦的表單
     @GetMapping("/personal-recommend/edit/{storeId}")
-    public String showEditRecommendForm(
-            @PathVariable("storeId") Integer storeId,
-            Model model,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
+    public String showEditRecommendForm(@PathVariable("storeId") Integer storeId,
+                                        Model model,
+                                        HttpSession session,
+                                        RedirectAttributes redirectAttributes) {
         UserModel currentUser = (UserModel) session.getAttribute("user");
         if (currentUser == null) {
+            logger.warn("未登入用戶嘗試訪問編輯推薦頁面。");
             return "redirect:/login";
         }
         try {
-            // 使用 user_id (從 session) 和 store_id (從路徑) 查詢推薦
-            Optional<RecommendDTO> recommendDTO = recommendService.getRecommendsByUserIdAndStoreId(currentUser.getId(), storeId);
-            if (recommendDTO.isPresent()) {
+            Optional<RecommendDTO> recommendDTOOptional = recommendService.getRecommendByUserAndStoreId(currentUser, storeId);
+            if (recommendDTOOptional.isPresent()) {
                 model.addAttribute("pageTitle", "編輯我的推薦");
-                model.addAttribute("recommendDTO", recommendDTO.get());
+                model.addAttribute("recommendDTO", recommendDTOOptional.get());
                 return "recommend-form";
             } else {
+                logger.warn("用戶 {} 嘗試編輯不存在或無權限的推薦，店家ID: {}", currentUser.getId(), storeId);
                 redirectAttributes.addFlashAttribute("errorMessage", "找不到該推薦或您無權編輯。");
                 return "redirect:/personal-recommend";
             }
         } catch (Exception e) {
-            logger.error("加載編輯表單失敗：{}", e.getMessage(), e);
+            logger.error("加載編輯表單失敗，用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUser.getId(), storeId, e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", "加載編輯表單失敗：" + e.getMessage());
             return "redirect:/personal-recommend";
         }
     }
 
     // 處理編輯推薦的提交
-    public String updateRecommendProcess(
-            @PathVariable("storeId") Integer pathStoreId,
-            @ModelAttribute("recommendDTO") @Validated RecommendDTO recommendDTO,
-            BindingResult bindingResult,
-            HttpSession session,
-            RedirectAttributes redirectAttributes,
-            Model model) {
+    @PostMapping("/personal-recommend/edit/{storeId}")
+    public String updateRecommendProcess(@PathVariable("storeId") Integer pathStoreId,
+                                         @ModelAttribute("recommendDTO") @Validated RecommendDTO recommendDTO,
+                                         BindingResult bindingResult,
+                                         HttpSession session,
+                                         RedirectAttributes redirectAttributes,
+                                         Model model) {
         UserModel currentUser = (UserModel) session.getAttribute("user");
         if (currentUser == null) {
             return "redirect:/login";
         }
 
-        // 確保 DTO 中的 storeId 與 PathVariable 匹配
         if (!pathStoreId.equals(recommendDTO.getStoreId())) {
             bindingResult.rejectValue("storeId", "error.recommendDTO", "無效的編輯請求，店家ID不匹配。");
         }
 
-        // 在編輯模式下，storeName 和 storeAddress 始終是必需的
         if (recommendDTO.getStoreName() == null || recommendDTO.getStoreName().trim().isEmpty()) {
             bindingResult.rejectValue("storeName", "error.recommendDTO", "店家名稱不能為空！");
         }
         if (recommendDTO.getStoreAddress() == null || recommendDTO.getStoreAddress().trim().isEmpty()) {
             bindingResult.rejectValue("storeAddress", "error.recommendDTO", "店家地址不能為空！");
         }
+        if (recommendDTO.getScore() == null || recommendDTO.getScore() < 1 || recommendDTO.getScore() > 5) {
+            bindingResult.rejectValue("score", "error.recommendDTO", "請選擇有效的星級評分！");
+        }
 
         if (bindingResult.hasErrors()) {
             logger.warn("編輯推薦表單驗證失敗。");
             model.addAttribute("pageTitle", "編輯我的推薦");
-            return "recommendation-form";
+            model.addAttribute("recommendDTO", recommendDTO);
+            return "recommend-form";
         }
         try {
-            String photoUrl = null;
-            // 處理圖片上傳 (只有在有新圖片上傳時才更新)
             if (recommendDTO.getStorePhoto() != null && !recommendDTO.getStorePhoto().isEmpty()) {
-                photoUrl = fileStorageService.uploadFile(recommendDTO.getStorePhoto());
+                String photoUrl = fileStorageService.uploadFile(recommendDTO.getStorePhoto());
                 recommendDTO.setStorePhotoUrl(photoUrl);
             } else {
                 Optional<StoreModel> existingStore = storeService.getStoreById(recommendDTO.getStoreId());
                 existingStore.ifPresent(s -> recommendDTO.setStorePhotoUrl(s.getPhotoUrl()));
             }
 
-            // 更新推薦
             recommendService.updateRecommend(recommendDTO, currentUser);
             redirectAttributes.addFlashAttribute("successMessage", "推薦更新成功！");
             return "redirect:/personal-recommend";
@@ -425,12 +408,14 @@ public class UserController {
             logger.error("更新推薦失敗：{}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             model.addAttribute("pageTitle", "編輯我的推薦");
-            return "recommendation-form";
+            model.addAttribute("recommendDTO", recommendDTO);
+            return "recommend-form";
         } catch (Exception e) {
             logger.error("更新推薦失敗：{}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", "更新推薦失敗，請重試。");
             model.addAttribute("pageTitle", "編輯我的推薦");
-            return "recommendation-form";
+            model.addAttribute("recommendDTO", recommendDTO);
+            return "recommend-form";
         }
     }
 }

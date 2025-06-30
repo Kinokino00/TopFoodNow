@@ -20,17 +20,17 @@ public class RecommendDTO {
 
     private String userName;
 
-    @NotNull(message = "店家名稱為必填！", groups = NewStoreValidation.class)
+    @NotNull(message = "店家名稱為必填！")
     private String storeName;
 
-    @NotNull(message = "店家地址為必填！", groups = NewStoreValidation.class)
+    @NotNull(message = "店家地址為必填！")
     private String storeAddress;
 
     private MultipartFile storePhoto;
 
     private String storePhotoUrl;
 
-    @NotBlank(message = "推薦原因不能為空！")
+    @NotBlank(message = "推薦原因為必填！")
     private String reason;
 
     @NotNull(message = "請給店家評分！")
@@ -39,6 +39,4 @@ public class RecommendDTO {
     private Integer score;
 
     private LocalDateTime createdAt;
-
-    public interface NewStoreValidation {}
 }

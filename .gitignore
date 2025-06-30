@@ -85,6 +85,7 @@ application*.yml
 # 排除包含敏感信息的配置，例如資料庫密碼，這些應該通過環境變量或外部配置管理
 # application-dev.properties
 # application-local.properties
+/dynamic-content/
 
 # Eclipse
 .classpath

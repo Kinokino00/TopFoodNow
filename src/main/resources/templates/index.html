@@ -1,18 +1,42 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layouts/layout :: layout(~{::head}, ~{::body/content}, ~{::body/scripts})}">
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/layout :: layout(~{::head}, ~{::body/content}, ~{::body/scripts})}">
 <head>
     <title>Top Food Now</title>
+    <style>
+        .card-header {
+            display: flex;
+            align-items: center;
+            height: 56px;
+        }
+        .card {
+            position: relative;
+            overflow: hidden;
+        }
+        .card-user {
+            position: absolute;
+            padding: 2px 6px;
+            background-color: #688ec7;
+            color: white;
+            font-size: 14px;
+            border-radius: 0 0 4px 0;
+        }
+        .card-img-top {
+            height: 112px;
+            object-fit: cover;
+        }
+        .card-title, .card-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
 </head>
+
 <body>
 
 <th:block th:fragment="content">
-    <h1 class="mb-3">首頁</h1>
-    <form id="aiSearchForm" class="mb-4">
-        <button type="submit" class="btn btn-outline-primary">AI 搜尋</button>
-    </form>
-
-    <div th:if="${session.user != null}">
+    <div class="d-flex justify-content-end mt-4" th:if="${session.user != null}">
         <a href="/personal-recommend/add" class="btn btn-primary me-2">推薦</a>
         <a href="personal-recommend" class="btn btn-secondary">個人推薦</a>
     </div>
@@ -20,14 +44,15 @@
     <div class="row mt-5">
         <div class="col-md-6">
             <div class="card mb-4 shadow-sm">
-                <div class="card-header">AI 推薦</div>
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0">AI 推薦</h5>
+                    <button type="button" class="btn btn-outline-primary" id="aiSearchButton">AI 搜尋</button>
+                </div>
                 <div class="card-body" id="ai-recommend">
                     <div class="row g-3" id="ai-container">
-                        <div class="col-12" th:each="store : ${storeList}">
+                        <div class="col-6" th:each="store : ${storeList}">
                             <div class="card">
-                                <img th:src="${#strings.isEmpty(store.photoUrl)} ? @{/images/gcBGM3N.jpeg} : @{${store.photoUrl}}"
-                                     class="card-img-top"
-                                     th:alt="${store.name}" />
+                                <img th:src="${store.photoUrl}" class="card-img-top" th:alt="${store.name}" onerror="this.onerror=null;this.src='/images/default-image.jpg';"/>
                                 <div class="card-body p-2">
                                     <h6 class="card-title mb-1" th:text="${store.name}"></h6>
                                     <p class="card-text small text-muted" th:text="${store.address}"></p>
@@ -41,26 +66,22 @@
 
         <div class="col-md-6">
             <div class="card mb-4 shadow-sm">
-                <div class="card-header">網紅推薦</div>
+                <div class="card-header">
+                    <h5 class="mb-0">網紅推薦</h5>
+                </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-12" th:each="influencer : ${influencerList}">
+                        <div class="col-6" th:each="newStore : ${newStoreList}">
                             <div class="card">
-                                <div class="d-flex align-items-center p-2">
-                                    <a th:href="@{'influencerProfile?id=' + ${influencer.id}}" class="me-3 fw-bold" th:text="${influencer.name}"></a>
-                                    <div>
-                                        <span th:each="i : ${#numbers.sequence(1,5)}">
-                                            <i class="bi" th:classappend="${i <= influencer.rating} ? 'bi-star-fill text-warning' : 'bi-star'"></i>
-                                        </span>
-                                    </div>
+                                <div class="card-user">
+                                    <span th:text="${newStore.userName}"></span>
+                                    推薦
                                 </div>
-                                <a th:href="@{'restaurantDetail?id=' + ${influencer.id}}" class="text-decoration-none text-dark">
-                                    <img th:src="@{${influencer.photoUrl}}" class="card-img-top" th:alt="${influencer.name}"/>
-                                    <div class="card-body p-2">
-                                        <h6 class="card-title mb-1" th:text="${influencer.name}"></h6>
-                                        <p class="card-text small text-muted" th:text="${influencer.address}"></p>
-                                    </div>
-                                </a>
+                                <img th:src="${newStore.storePhotoUrl}" class="card-img-top" th:alt="${newStore.storeName}"/>
+                                <div class="card-body p-2">
+                                    <h6 class="card-title mb-1" th:text="${newStore.storeName}"></h6>
+                                    <p class="card-text small text-muted" th:text="${newStore.storeAddress}"></p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -72,44 +93,44 @@
 
 <th:block th:fragment="scripts">
     <script>
-    document.getElementById("aiSearchForm").addEventListener("submit", function(e) {
-        e.preventDefault();
+    document.getElementById("aiSearchButton").addEventListener("click", function() {
         const container = document.getElementById("ai-container");
-        container.innerHTML = `<div class="text-center py-3">
+        container.innerHTML = `<div class="text-center mt-4 py-0">
             <div class="spinner-border text-primary" role="status"></div>
             <p class="mt-2">AI 推薦載入中...</p>
         </div>`;
 
-        fetch("/api/ai")
-            .then(res => res.json())
+        fetch("/api/ai").then(res => res.json())
             .then(data => {
                 if (!data.length) {
                     container.innerHTML = "<p>找不到餐廳</p>";
                     return;
                 }
-
                 container.innerHTML = "";
                 data.forEach(ai => {
-                    const img = ai.photoUrl || "/images/gcBGM3N.jpeg";
+                    const img = ai.photoUrl || "/images/default-image.jpg";
                     const card = `
-                        <div class="col-12">
+                        <div class="col-6">
                             <a href="${ai.url}" target="_blank" class="text-decoration-none text-dark">
                                 <div class="card">
-                                    <img src="${img}" class="card-img-top" alt="${ai.name}" onerror="this.src='/images/gcBGM3N.jpeg'" />
+                                    <img src="${img}" class="card-img-top" alt="${ai.name}" onerror="this.src='/images/default-image.jpg'" />
                                     <div class="card-body p-2">
                                         <h6 class="card-title mb-1">${ai.name}</h6>
                                         <p class="card-text small text-muted">${ai.address}</p>
                                     </div>
-                                </a>
-                            </div>
+                                </div>
+                            </a>
                         </div>`;
-                    container.insertAdjacentHTML("beforeend", card);
-                });
+                container.insertAdjacentHTML("beforeend", card);
             });
+        })
+        .catch(error => {
+            console.error('Error fetching AI recommendations:', error);
+            container.innerHTML = "<p class='text-danger'>載入推薦時發生錯誤，請稍後再試。</p>";
+        });
     });
     </script>
 </th:block>
 
 </body>
-
 </html>

@@ -1,146 +1,141 @@
 <!DOCTYPE html>
 <html lang="zh-TW" xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/layout :: layout(~{::head}, ~{::body/content}, ~{::body/scripts})}">
 <head>
-    <title>新建推薦</title>
+    <title th:text="${pageTitle}">新增推薦</title>
+    <style>
+        /* CSS for Star Rating */
+        .star-rating {
+            font-size: 2em; /* Adjust size as needed */
+            cursor: pointer;
+            color: #ccc; /* Default empty star color */
+            display: inline-block; /* Keep stars on one line */
+        }
+        .star-rating .fa-solid {
+            color: gold; /* Filled star color */
+        }
+        .star-rating .fa-star {
+            margin-right: 5px; /* Spacing between stars */
+        }
+    </style>
 </head>
 <body>
 
 <th:block th:fragment="content">
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${successMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-        <span th:text="${errorMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div class="container mt-4">
+        <h2 th:text="${pageTitle}" class="mb-4">新增我的推薦</h2>
 
-    <form th:action="@{${recommendDTO.userId != null ? '/personal-recommend/edit/' + recommendDTO.storeId : '/personal-recommend/add'}}"
-          th:object="${recommendDTO}" method="post" enctype="multipart/form-data">
-
-        <div class="mb-3">
-            <label for="storeSelect" class="form-label">選擇店家或新增店家</label>
-            <select class="form-select" id="storeSelect" name="storeId">
-                <option value="">-- 請選擇一個店家 --</option>
-                <option th:each="store : ${stores}"
-                        th:value="${store.id}"
-                        th:text="${store.name} + ' (' + ${store.address} + ')'"
-                        th:selected="${store.id == recommendDTO.storeId}">
-                </option>
-                <option value="-1">-- 新增店家 --</option> </select>
-            <div th:if="${#fields.hasErrors('storeId')}" th:errors="*{storeId}" class="text-danger"></div>
-            <small class="form-text text-muted">選擇現有店家，或選擇「新增店家」後填寫下方資訊。</small>
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <div id="newStoreFields" style="display:none;">
-            <hr>
-            <h5>新增店家資訊</h5>
+        <form th:action="@{${recommendDTO.userId != null ? '/personal-recommend/edit/' + recommendDTO.storeId : '/personal-recommend/add'}}" th:object="${recommendDTO}" method="post" enctype="multipart/form-data">
+
             <div class="mb-3">
-                <label for="newStoreName" class="form-label">店家名稱</label>
-                <input type="text" class="form-control" id="newStoreName" name="newStoreName"
-                       th:value="${recommendDTO.storeName}">
+                <label for="storeName" class="form-label">店家名稱 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="storeName" name="storeName"
+                       th:value="*{storeName}" required>
                 <div th:if="${#fields.hasErrors('storeName')}" th:errors="*{storeName}" class="text-danger"></div>
             </div>
+
             <div class="mb-3">
-                <label for="newStoreAddress" class="form-label">店家地址</label>
-                <input type="text" class="form-control" id="newStoreAddress" name="newStoreAddress"
-                       th:value="${recommendDTO.storeAddress}">
+                <label for="storeAddress" class="form-label">店家地址 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="storeAddress" name="storeAddress"
+                       th:value="*{storeAddress}" required>
                 <div th:if="${#fields.hasErrors('storeAddress')}" th:errors="*{storeAddress}" class="text-danger"></div>
             </div>
+
             <div class="mb-3">
-                <label for="storePhoto" class="form-label">上傳店家圖片</label>
+                <label for="storePhoto" class="form-label">上傳店家圖片 <span class="text-danger">*</span></label>
                 <input type="file" class="form-control" id="storePhoto" name="storePhoto" accept="image/*">
-                <small class="form-text text-muted">選擇一張圖片作為店家代表圖。</small>
-                <div th:if="${recommendDTO.storePhotoUrl != null and recommendDTO.storePhotoUrl ne ''}" class="mt-2">
-                    <p>目前圖片：</p>
-                    <img th:src="${recommendDTO.storePhotoUrl}" alt="店家圖片預覽" style="max-width: 200px; height: auto;">
+                <div th:if="${#fields.hasErrors('storePhoto')}" th:errors="*{storePhoto}" class="text-danger"></div>
+            </div>
+            <hr>
+
+            <div class="mb-3">
+                <label for="reason" class="form-label">推薦理由 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="reason" name="reason" rows="4" th:field="*{reason}" required></textarea>
+                <div th:if="${#fields.hasErrors('reason')}" th:errors="*{reason}" class="text-danger"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">給店家打幾顆星？ <span class="text-danger">*</span></label>
+                <div class="star-rating" id="starRatingContainer">
+                    <i class="fa-regular fa-star" data-value="1"></i>
+                    <i class="fa-regular fa-star" data-value="2"></i>
+                    <i class="fa-regular fa-star" data-value="3"></i>
+                    <i class="fa-regular fa-star" data-value="4"></i>
+                    <i class="fa-regular fa-star" data-value="5"></i>
                 </div>
+                <input type="hidden" id="score" name="score" th:field="*{score}">
+                <div th:if="${#fields.hasErrors('score')}" th:errors="*{score}" class="text-danger"></div>
             </div>
-        </div>
-        <hr>
 
-        <div class="mb-3">
-            <label for="reason" class="form-label">推薦理由</label>
-            <textarea class="form-control" id="reason" name="reason" rows="4" th:field="*{reason}"></textarea>
-            <div th:if="${#fields.hasErrors('reason')}" th:errors="*{reason}" class="text-danger"></div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">給店家打幾顆星？</label>
-            <div class="star-rating">
-                <i class="fa-regular fa-star" data-value="1"></i>
-                <i class="fa-regular fa-star" data-value="2"></i>
-                <i class="fa-regular fa-star" data-value="3"></i>
-                <i class="fa-regular fa-star" data-value="4"></i>
-                <i class="fa-regular fa-star" data-value="5"></i>
-            </div>
-            <input type="hidden" id="score" name="score" th:field="*{score}">
-            <div th:if="${#fields.hasErrors('score')}" th:errors="*{score}" class="text-danger"></div>
-        </div>
-
-        <button type="submit" class="btn btn-primary" th:text="${recommendDTO.userId != null ? '更新推薦' : '新增推薦'}">新增推薦</button>
-        <a th:href="@{/personal-recommend}" class="btn btn-secondary ms-2">取消</a>
-    </form>
+            <button type="submit" class="btn btn-primary" th:text="${recommendDTO.userId != null ? '更新推薦' : '新增推薦'}">新增推薦</button>
+            <a th:href="@{/personal-recommend}" class="btn btn-secondary ms-2">取消</a>
+        </form>
+    </div>
 </th:block>
 
-
 <th:block th:fragment="scripts">
-    document.addEventListener('DOMContentLoaded', function() {
-        const storeSelect = document.getElementById('storeSelect');
-        const newStoreFields = document.getElementById('newStoreFields');
-        const scoreInput = document.getElementById('score');
-        const stars = document.querySelectorAll('.star-rating .fa-star');
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const scoreInput = document.getElementById('score');
+            const starRatingContainer = document.getElementById('starRatingContainer');
+            const stars = starRatingContainer.querySelectorAll('.fa-star');
 
-        function toggleNewStoreFields() {
-            if (storeSelect.value === '-1') {
-                newStoreFields.style.display = 'block';
-            } else {
-                newStoreFields.style.display = 'none';
-            }
-        }
-
-        toggleNewStoreFields();
-        storeSelect.addEventListener('change', toggleNewStoreFields);
-
-        function updateStars(currentScore) {
-            stars.forEach(star => {
-                const starValue = parseInt(star.dataset.value);
-                if (starValue <= currentScore) {
-                    star.classList.remove('fa-regular');
-                    star.classList.add('fa-solid', 'checked');
-                } else {
-                    star.classList.remove('fa-solid', 'checked');
-                    star.classList.add('fa-regular');
-                }
-            });
-        }
-
-        const initialScore = parseInt(scoreInput.value) || 0;
-        updateStars(initialScore);
-
-        stars.forEach(star => {
-            star.addEventListener('click', function() {
-                const value = parseInt(this.dataset.value);
-                scoreInput.value = value;
-                updateStars(value);
-            });
-            star.addEventListener('mouseover', function() {
-                const value = parseInt(this.dataset.value);
-                stars.forEach((s, index) => {
-                    if (index < value) {
-                        s.classList.remove('fa-regular');
-                        s.classList.add('fa-solid');
+            // Function to update star appearance based on a given score
+            function updateStars(currentScore) {
+                stars.forEach(star => {
+                    const starValue = parseInt(star.dataset.value);
+                    if (starValue <= currentScore) {
+                        star.classList.remove('fa-regular');
+                        star.classList.add('fa-solid'); // Filled star
                     } else {
-                        s.classList.remove('fa-solid');
-                        s.classList.add('fa-regular');
+                        star.classList.remove('fa-solid');
+                        star.classList.add('fa-regular'); // Empty star
                     }
                 });
-            });
-            star.addEventListener('mouseout', function() {
-                updateStars(parseInt(scoreInput.value) || 0);
+            }
+
+            // Set initial stars based on existing score (for edit mode)
+            const initialScore = parseInt(scoreInput.value) || 0;
+            updateStars(initialScore);
+
+            // Add click event listener to each star
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const value = parseInt(this.dataset.value);
+                    scoreInput.value = value; // Update hidden input
+                    updateStars(value); // Update star appearance
+                });
+
+                // Add mouseover event listener for hover effect
+                star.addEventListener('mouseover', function() {
+                    const hoverValue = parseInt(this.dataset.value);
+                    stars.forEach((s) => {
+                        const starValue = parseInt(s.dataset.value);
+                        if (starValue <= hoverValue) {
+                            s.classList.remove('fa-regular');
+                            s.classList.add('fa-solid');
+                        } else {
+                            s.classList.remove('fa-solid');
+                            s.classList.add('fa-regular');
+                        }
+                    });
+                });
+
+                // Add mouseout event listener to revert to selected score
+                star.addEventListener('mouseout', function() {
+                    updateStars(parseInt(scoreInput.value) || 0); // Revert to current selected score
+                });
             });
         });
-    });
+    </script>
 </th:block>
 
 </body>

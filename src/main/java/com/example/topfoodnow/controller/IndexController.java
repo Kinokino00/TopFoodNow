@@ -1,9 +1,9 @@
 package com.example.topfoodnow.controller;
 
+import com.example.topfoodnow.dto.RecommendDTO;
 import com.example.topfoodnow.model.StoreModel;
-import com.example.topfoodnow.model.InfluencerModel;
 import com.example.topfoodnow.service.StoreService;
-import com.example.topfoodnow.service.InfluencerService;
+import com.example.topfoodnow.service.RecommendService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,17 +15,16 @@ import java.util.List;
 public class IndexController {
     @Autowired
     private StoreService storeService;
-
     @Autowired
-    private InfluencerService influencerService;
+    private RecommendService recommendService;
 
     @GetMapping("/")
     public String index(Model model) {
         List<StoreModel> storeList = storeService.findRandom6Stores();
         model.addAttribute("storeList", storeList);
 
-        List<InfluencerModel> influencerList = influencerService.getInfluencers();
-        model.addAttribute("influencerList", influencerList);
+        List<RecommendDTO> famousUserNewStoreList = recommendService.findLatestFamousUserRecommends(6);
+        model.addAttribute("newStoreList", famousUserNewStoreList);
         return "index";
     }
 }

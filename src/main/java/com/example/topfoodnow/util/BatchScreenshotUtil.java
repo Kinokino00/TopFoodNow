@@ -1,143 +1,133 @@
+// src/main/java/com/example/topfoodnow/util/BatchScreenshotUtil.java
+
 package com.example.topfoodnow.util;
 
-import com.example.topfoodnow.model.AiRestaurantModel;
-import io.github.bonigarcia.wdm.WebDriverManager;
+import com.example.topfoodnow.model.AiRestaurantModel; // 確保路徑正確
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.UUID;
+import java.time.Duration;
 
 @Component
 public class BatchScreenshotUtil {
-    public List<AiRestaurantModel> captureScreenshots(List<AiRestaurantModel> list, String screenshotDir) {
-        return captureScreenshots(list, screenshotDir, null);
+    private static final Logger logger = LoggerFactory.getLogger(BatchScreenshotUtil.class);
+
+    @Value("${file.dynamic-content-base-dir}")
+    private String dynamicContentBaseDir;
+
+    @Value("${file.screenshot-sub-dir}")
+    private String screenshotSubDir;
+
+    private Path screenshotSaveLocation;
+
+    public BatchScreenshotUtil(@Value("${file.dynamic-content-base-dir}") String baseDir,
+                               @Value("${file.screenshot-sub-dir}") String subDir) {
+        this.screenshotSaveLocation = Paths.get(baseDir, subDir).toAbsolutePath().normalize();
+        try {
+            Files.createDirectories(this.screenshotSaveLocation);
+            logger.info("截圖儲存目錄初始化成功: {}", this.screenshotSaveLocation);
+        } catch (IOException ex) {
+            logger.error("無法創建截圖儲存目錄！請檢查路徑和權限: {}", this.screenshotSaveLocation, ex);
+            throw new RuntimeException("無法創建截圖儲存目錄！", ex);
+        }
     }
 
-    public List<AiRestaurantModel> captureScreenshots(
-            List<AiRestaurantModel> list,
-            String screenshotDir,
-            BiConsumer<AiRestaurantModel, Integer> onSuccess
-    ) {
-        List<AiRestaurantModel> successList = new ArrayList<>();
-        File dir = new File(screenshotDir);
-        if (!dir.exists()) dir.mkdirs();
-
-        try {
-            for (File file : dir.listFiles()) {
-                file.delete();
-            }
-        } catch (Exception ignored) {}
-
+    /**
+     * 批量捕捉餐廳網址的截圖
+     * @param aiRestaurantList 包含餐廳名稱和 URL 的列表
+     * @return 成功截圖的 AiRestaurantModel 列表，其中包含截圖的 URL
+     */
+    public List<AiRestaurantModel> captureScreenshots(List<AiRestaurantModel> aiRestaurantList) {
+        List<AiRestaurantModel> successfulScreenshots = new ArrayList<>();
         WebDriver driver = null;
         try {
-            WebDriverManager.chromedriver().setup();
-
             ChromeOptions options = new ChromeOptions();
-            options.addArguments("--headless=new");
-            options.addArguments("--disable-gpu");
-            options.addArguments("--window-size=1280,800");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--ignore-certificate-errors");
-            options.addArguments("--log-level=3");
+            options.addArguments("--headless");    // 無頭模式
+            options.addArguments("--disable-gpu"); // 禁用 GPU 加速 (在無頭模式下可能不需要)
+            options.addArguments("--no-sandbox");  // 禁用沙箱模式 (尤其在 Docker 環境中需要)
+            options.addArguments("--disable-dev-shm-usage");     // 解決 /dev/shm 空間不足問題
+            options.addArguments("--window-size=1280,800");      // 設置窗口大小
+            options.addArguments("--ignore-certificate-errors"); // 忽略證書錯誤
+            options.addArguments("--disable-extensions");        // 禁用擴展
+            options.addArguments("--remote-allow-origins=*");    // 允許所有遠程來源，處理 CORS 問題
 
-            ChromeDriverService service = new ChromeDriverService.Builder()
-                    .withSilent(true)
-                    .build();
+            // 初始化 ChromeDriver
+            driver = new ChromeDriver(options);
+            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30)); // 頁面加載超時
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));  // 隱式等待
 
-            driver = new ChromeDriver(service, options);
+            for (AiRestaurantModel restaurant : aiRestaurantList) {
+                String url = restaurant.getUrl();
+                if (url == null || url.isEmpty()) {
+                    logger.warn("餐廳 '{}' 沒有提供 URL，跳過截圖。", restaurant.getName());
+                    continue;
+                }
 
-            int count = 0;
-            for (AiRestaurantModel info : list) {
-                if (count >= 6) break;
-                String url = info.getUrl();
-                if (isBlacklistedUrl(url)) continue;
+                if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                    url = "http://" + url; // 預設使用 http
+                    logger.warn("餐廳 '{}' 的 URL '{}' 缺少協議頭，已自動補齊為 '{}'。", restaurant.getName(), restaurant.getUrl(), url);
+                }
 
-                boolean success = false;
-                int retries = 0;
-                while (!success && retries < 3) {
-                    try {
-                        driver.get(url);
-                        Thread.sleep(8000); // 增加等待時間
-
-                        String pageTitle = driver.getTitle().toLowerCase();
-                        String pageSource = driver.getPageSource().toLowerCase();
-
-                        if (pageTitle.contains("404") || pageSource.contains("404")) break;
-                        if (isSuspiciousPage(pageTitle, pageSource)) break;
-
-                        File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-                        File dest = new File(dir, "restaurant_" + (count + 1) + ".png");
-                        Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                        info.setPhotoUrl("screenshots/" + dest.getName());
-                        successList.add(info);
-                        if (onSuccess != null) onSuccess.accept(info, count);
-                        count++;
-                        success = true;
-                    } catch (Exception e) {
-                        retries++;
-                        if (retries >= 3) {
-                            System.err.println("多次截圖失敗: " + url);
-                        }
+                try {
+                    logger.info("嘗試訪問 URL: {}", url);
+                    driver.get(url);
+                    String screenshotUrl = captureScreenshot(driver, restaurant.getName());
+                    if (screenshotUrl != null) {
+                        restaurant.setPhotoUrl(screenshotUrl);
+                        successfulScreenshots.add(restaurant);
+                        logger.info("成功截圖 '{}'，圖片 URL: {}", restaurant.getName(), screenshotUrl);
+                    } else {
+                        logger.warn("截圖 '{}' 失敗，URL: {}", restaurant.getName(), url);
                     }
+                } catch (Exception e) {
+                    logger.error("訪問或截圖 '{}' ({}) 時發生錯誤: {}", restaurant.getName(), url, e.getMessage());
                 }
             }
         } catch (Exception e) {
-            System.err.println("BatchScreenshotUtil 發生致命錯誤，無法初始化 WebDriver: " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
+            logger.error("初始化 Selenium WebDriver 時發生錯誤: {}", e.getMessage(), e);
         } finally {
             if (driver != null) {
                 driver.quit();
+                logger.info("Selenium WebDriver 已關閉。");
             }
         }
-        return successList;
+        return successfulScreenshots;
     }
 
-    private boolean isUrlReachable(String url) {
+    /**
+     * 捕捉單個頁面的截圖並保存到指定目錄
+     * @param driver       WebDriver 實例
+     * @param baseFilename 截圖的基礎文件名
+     * @return 截圖的相對 URL 路徑，如果失敗則返回 null
+     */
+    private String captureScreenshot(WebDriver driver, String baseFilename) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setRequestMethod("HEAD");
-            conn.setConnectTimeout(2000);
-            conn.connect();
-            return conn.getResponseCode() < 400;
-        } catch (Exception e) {
-            return false;
+            File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            String cleanBaseFilename = baseFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
+            String targetFileName = UUID.randomUUID().toString() + "_" + cleanBaseFilename + ".png"; // 確保唯一性
+
+            Path destPath = this.screenshotSaveLocation.resolve(targetFileName);
+            Files.copy(srcFile.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return "/dynamic-content/" + screenshotSubDir + targetFileName;
+        } catch (IOException e) {
+            logger.error("保存截圖失敗，文件名: {}. 錯誤: {}", baseFilename, e.getMessage(), e);
+            return null;
         }
-    }
-
-    private static boolean isBlacklistedUrl(String url) {
-        if (url == null || url.isBlank()) return true;
-        String lower = url.toLowerCase();
-        return lower.contains("facebook.com") ||
-                lower.contains("instagram.com") ||
-                lower.contains("gov.tw/login") ||
-                lower.contains("expired-cert") ||
-                lower.startsWith("http://") ||
-                lower.endsWith(".info") ||
-                !lower.startsWith("https://");
-    }
-
-    private static boolean isSuspiciousPage(String title, String html) {
-        return title.contains("不安全") ||
-                title.contains("error") ||
-                title.contains("404") ||
-                html.contains("net::err_cert") ||
-                html.contains("connection is not private") ||
-                html.contains("安全性憑證") ||
-                html.contains("攻擊者可能正在");
     }
 }

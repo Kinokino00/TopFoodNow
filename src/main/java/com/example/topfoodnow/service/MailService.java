@@ -54,7 +54,7 @@ public class MailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(senderEmail);
         message.setTo(toEmail);
-        message.setSubject("密碼重設請求 - 餐廳推薦");
+        message.setSubject("密碼重設請求 - Top Food Now");
         message.setText("您好 " + userName + ",\n\n"
                 + "我們收到您的密碼重設請求。請點擊以下連結重設您的密碼：\n"
                 + resetLink + "\n\n"
