@@ -79,12 +79,7 @@ logs/
 # spring.profiles.active=dev 可能產生特定於開發環境的配置
 application*.properties
 application*.yml
-!application.properties
-!application-prod.properties
-!application.yml # 允許提交基本的 application.yml
-# 排除包含敏感信息的配置，例如資料庫密碼，這些應該通過環境變量或外部配置管理
-# application-dev.properties
-# application-local.properties
+application.properties
 /dynamic-content/
 
 # Eclipse

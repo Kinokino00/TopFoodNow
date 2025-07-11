@@ -2,7 +2,7 @@ package com.example.topfoodnow.controller;
 
 import com.example.topfoodnow.model.AiRestaurantModel;
 import com.example.topfoodnow.util.BatchScreenshotUtil;
-import com.example.topfoodnow.util.ChatGPTUtil;
+import com.example.topfoodnow.util.AiUtil;
 import com.example.topfoodnow.util.JsonUtil;
 import com.example.topfoodnow.dto.RecommendDTO;
 import com.example.topfoodnow.service.RecommendService;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import org.json.JSONException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,7 +31,7 @@ public class AiRestaurantController {
     private final BatchScreenshotUtil batchScreenshotUtil;
     private final RecommendService recommendService;
 
-    @Value("${openai.api.key}")
+    @Value("${ai.api.key}")
     private String apiKey;
 
     public AiRestaurantController(JsonUtil jsonUtil,
@@ -42,54 +43,58 @@ public class AiRestaurantController {
     }
 
     private static final String PROMPT =
-            "請輸出台北6家熱門美食餐廳，包含名稱、地址和網址(盡量提供穩定可訪問的非社群媒體官方網站)。使用 JSON 陣列格式回傳，例如：\n" +
-                    "[{\"name\": \"鼎泰豐\", \"address\": \"台北市信義路二段22號\", \"url\": \"https://www.dintaifung.com.tw/\"}]";
+        "請輸出台北6家熱門美食餐廳，包含名稱、地址和網址(盡量提供穩定可訪問的非社群媒體官方網站)。使用 JSON 陣列格式回傳，例如：\n" +
+        "[{\"name\": \"鼎泰豐\", \"address\": \"台北市信義路二段22號\", \"url\": \"https://www.dintaifung.com.tw/\"}]\n" +
+        "請確保回傳內容為純 JSON 陣列，不包含任何額外文字或 markdown 格式符號。"; // 針對Gemini優化提示，要求純JSON
 
     @Operation(
         summary = "獲取 AI 推薦餐廳列表",
-        description = "呼叫 OpenAI API 生成台北6家熱門美食餐廳推薦，並嘗試進行截圖。如果 AI 回傳解析失敗或截圖失敗，則從資料庫中提供備用餐廳列表。",
+        description = "呼叫 Google Gemini API 生成台北6家熱門美食餐廳推薦，並嘗試進行截圖。如果 AI 回傳解析失敗或截圖失敗，則從資料庫中提供備用餐廳列表。",
         responses = {
             @ApiResponse(
-                responseCode = "200",
-                description = "成功獲取 AI 推薦或資料庫備用餐廳列表",
-                content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = AiRestaurantModel.class, type = "array")
-                )
+                    responseCode = "200",
+                    description = "成功獲取 AI 推薦或資料庫備用餐廳列表",
+                    content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = AiRestaurantModel.class, type = "array")
+                    )
             ),
             @ApiResponse(
                 responseCode = "500",
-                description = "伺服器內部錯誤，例如與 OpenAI API 通訊失敗或截圖服務異常",
+                description = "伺服器內部錯誤，例如與 Google Gemini API 通訊失敗或截圖服務異常",
                 content = @Content(schema = @Schema(implementation = String.class))
             )
         }
     )
     @GetMapping
     public List<AiRestaurantModel> getAIRecommend() throws IOException {
-        logger.info("啟動 AI 搜尋");
+        logger.info("啟動 AI 搜尋 (Gemini)");
 
-        String gptFullResponseJson = ChatGPTUtil.askGpt(PROMPT, apiKey);
-        logger.debug("GPT 回傳原始 JSON: {}", gptFullResponseJson);
+        String geminiFullResponseJson = AiUtil.askAi(PROMPT, apiKey);
+        logger.debug("Gemini 回傳原始 JSON: {}", geminiFullResponseJson);
 
-        String gptContent = null;
+        String geminiContent = null;
         try {
-            JSONObject fullGptResponse = new JSONObject(gptFullResponseJson);
-            gptContent = fullGptResponse
-                    .getJSONArray("choices")
+            JSONObject fullGeminiResponse = new JSONObject(geminiFullResponseJson);
+            geminiContent = fullGeminiResponse
+                    .getJSONArray("candidates")
                     .getJSONObject(0)
-                    .getJSONObject("message")
-                    .getString("content");
-            logger.debug("GPT message.content 原始內容 (已由 JSONObject 處理標準跳脫): {}", gptContent);
-            logger.debug("GPT message.content 原始內容 (HEX): {}", toHex(gptContent));
+                    .getJSONObject("content")
+                    .getJSONArray("parts")
+                    .getJSONObject(0)
+                    .getString("text");
+
+            logger.debug("Gemini content 原始內容 (已處理): {}", geminiContent);
+            logger.debug("Gemini content 原始內容 (HEX): {}", toHex(geminiContent));
         } catch (JSONException e) {
-            logger.error("無法解析 GPT 原始回傳 JSON 或提取 'content' 欄位。", e);
-            logger.error("GPT 原始回傳 JSON (HEX): {}", toHex(gptFullResponseJson));
+            logger.error("無法解析 Gemini 原始回傳 JSON 或提取 'content' 欄位。", e);
+            logger.error("Gemini 原始回傳 JSON (HEX): {}", toHex(geminiFullResponseJson));
             return getFallbackFromDatabase();
         }
 
         String extractedJsonString = null;
         Pattern pattern = Pattern.compile("```json\\s*\\n([\\s\\S]*?)\\n```");
-        Matcher matcher = pattern.matcher(gptContent);
+        Matcher matcher = pattern.matcher(geminiContent);
 
         if (matcher.find()) {
             extractedJsonString = matcher.group(1);
@@ -99,23 +104,29 @@ public class AiRestaurantController {
             extractedJsonString = extractedJsonString.replaceAll("[\\p{C}&&[^\t\n\r]]", "");
             extractedJsonString = extractedJsonString.trim();
         } else {
-            logger.error("無法從 GPT 回應的 'content' 中提取有效的 JSON 程式碼區塊。GPT content: {}", gptContent);
-            logger.error("GPT content (HEX): {}", toHex(gptContent));
-            return getFallbackFromDatabase();
+            extractedJsonString = geminiContent.trim();
+            extractedJsonString = extractedJsonString.replaceAll("[\\p{C}&&[^\t\n\r]]", "");
+            logger.debug("無法從 Markdown 區塊中提取，直接使用清理後的 Gemini content 作為 JSON 字串: {}", extractedJsonString);
+            logger.debug("直接使用的 JSON 字串 (HEX): {}", toHex(extractedJsonString));
+
+            if (extractedJsonString.startsWith("```json") || extractedJsonString.endsWith("```")) {
+                logger.error("即使直接使用，清理後的 Gemini content 仍然包含 Markdown 標記。這表示解析邏輯可能需要進一步調整。內容: '{}'", extractedJsonString);
+                return getFallbackFromDatabase();
+            }
         }
 
         List<AiRestaurantModel> aiList;
         try {
-            logger.debug("GPT 回傳最終清理後 JSON (傳給 JsonUtil 的內容): {}", extractedJsonString);
-            logger.debug("GPT 回傳最終清理後 JSON (HEX): {}", toHex(extractedJsonString));
+            logger.debug("Gemini 回傳最終清理後 JSON (傳給 JsonUtil 的內容): {}", extractedJsonString);
+            logger.debug("Gemini 回傳最終清理後 JSON (HEX): {}", toHex(extractedJsonString));
 
             aiList = jsonUtil.parseRestaurants(extractedJsonString);
         } catch (JSONException e) {
-            logger.error("解析 GPT 回傳 JSON 失敗，傳入 JsonUtil 的內容有誤。內容: '{}'", extractedJsonString, e);
+            logger.error("解析 Gemini 回傳 JSON 失敗，傳入 JsonUtil 的內容有誤。內容: '{}'", extractedJsonString, e);
             logger.error("傳入 JsonUtil 的內容 (HEX): {}", toHex(extractedJsonString));
             return getFallbackFromDatabase();
         } catch (Exception e) {
-            logger.error("解析 GPT 回傳 JSON 時發生未預期錯誤，內容: '{}'", extractedJsonString, e);
+            logger.error("解析 Gemini 回傳 JSON 時發生未預期錯誤，內容: '{}'", extractedJsonString, e);
             logger.error("傳入 JsonUtil 的內容 (HEX): {}", toHex(extractedJsonString));
             return getFallbackFromDatabase();
         }

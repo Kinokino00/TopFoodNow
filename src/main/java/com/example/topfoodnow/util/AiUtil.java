@@ -7,25 +7,29 @@ import java.util.stream.Collectors;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class ChatGPTUtil {
-    public static String askGpt(String prompt, String apiKey) throws IOException {
-        URL url = new URL("https://api.openai.com/v1/chat/completions");
+public class AiUtil {
+    public static String askAi(String prompt, String apiKey) throws IOException {
+        URL url = new URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
-        con.setRequestProperty("Authorization", "Bearer " + apiKey);
         con.setDoOutput(true);
 
-        JSONObject message = new JSONObject();
-        message.put("role", "user");
-        message.put("content", prompt);
+        JSONObject textPart = new JSONObject();
+        textPart.put("text", prompt);
 
-        JSONArray messages = new JSONArray();
-        messages.put(message);
+        JSONArray parts = new JSONArray();
+        parts.put(textPart);
+
+        JSONObject content = new JSONObject();
+        content.put("role", "user");
+        content.put("parts", parts);
+
+        JSONArray contents = new JSONArray();
+        contents.put(content);
 
         JSONObject requestBody = new JSONObject();
-        requestBody.put("model", "gpt-4o");
-        requestBody.put("messages", messages);
+        requestBody.put("contents", contents);
 
         try (OutputStream os = con.getOutputStream()) {
             byte[] input = requestBody.toString().getBytes("utf-8");
@@ -43,7 +47,7 @@ public class ChatGPTUtil {
             try (BufferedReader br = new BufferedReader(
                     new InputStreamReader(con.getErrorStream(), "utf-8"))) {
                 String error = br.lines().collect(Collectors.joining());
-                throw new IOException("OpenAI API 錯誤，HTTP " + status + ":\n" + error);
+                throw new IOException("Gemini API 錯誤，HTTP " + status + ":\n" + error);
             }
         }
     }
