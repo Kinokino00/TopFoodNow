@@ -1,84 +1,96 @@
 <!DOCTYPE html>
 <html lang="zh-TW" xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/layout :: layout(~{::head}, ~{::body/content}, ~{::body/scripts})}">
 <head>
-    <title th:text="${pageTitle}">新增推薦</title>
+    <title th:text="${pageTitle + ' - Top Food Now'}">新增推薦 - Top Food Now</title>
     <style>
-        /* CSS for Star Rating */
-        .star-rating {
-            font-size: 2em; /* Adjust size as needed */
+        i.fa-star {
+            display: inline-block;
+            margin-left: 5px;
+            color: #ccc;
+            font-size: 1.25rem;
+        }
+        .star-rating i.fa-star {
             cursor: pointer;
-            color: #ccc; /* Default empty star color */
-            display: inline-block; /* Keep stars on one line */
         }
-        .star-rating .fa-solid {
-            color: gold; /* Filled star color */
-        }
-        .star-rating .fa-star {
-            margin-right: 5px; /* Spacing between stars */
+        .star-rating i.fa-solid {
+            color: gold;
         }
     </style>
 </head>
 <body>
 
 <th:block th:fragment="content">
-    <div class="container mt-4">
-        <h2 th:text="${pageTitle}" class="mb-4">新增我的推薦</h2>
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 
-        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-            <span th:text="${successMessage}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span th:text="${errorMessage}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
-        <form th:action="@{${recommendDTO.userId != null ? '/personal-recommend/edit/' + recommendDTO.storeId : '/personal-recommend/add'}}" th:object="${recommendDTO}" method="post" enctype="multipart/form-data">
-
-            <div class="mb-3">
-                <label for="storeName" class="form-label">店家名稱 <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="storeName" name="storeName"
-                       th:value="*{storeName}" required>
-                <div th:if="${#fields.hasErrors('storeName')}" th:errors="*{storeName}" class="text-danger"></div>
+    <form th:action="@{${recommendDTO.userId != null ? '/personal-recommend/edit/' + recommendDTO.storeId : '/personal-recommend/add'}}" th:object="${recommendDTO}" method="post" enctype="multipart/form-data" class="d-grid gap-3 mt-4">
+        <div class="row">
+            <div class="col-6">
+                <label for="storeName" class="form-label">店家名稱
+                    <span th:if="${recommendDTO.userId == null}" class="text-danger"> *</span>
+                </label>
+                <input type="text" class="form-control" id="storeName" name="storeName" th:value="*{storeName}" required>
+                <p th:if="${#fields.hasErrors('storeName')}" th:errors="*{storeName}" class="text-danger small"></p>
             </div>
-
-            <div class="mb-3">
-                <label for="storeAddress" class="form-label">店家地址 <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="storeAddress" name="storeAddress"
-                       th:value="*{storeAddress}" required>
-                <div th:if="${#fields.hasErrors('storeAddress')}" th:errors="*{storeAddress}" class="text-danger"></div>
-            </div>
-
-            <div class="mb-3">
-                <label for="storePhoto" class="form-label">上傳店家圖片 <span class="text-danger">*</span></label>
-                <input type="file" class="form-control" id="storePhoto" name="storePhoto" accept="image/*">
-                <div th:if="${#fields.hasErrors('storePhoto')}" th:errors="*{storePhoto}" class="text-danger"></div>
-            </div>
-            <hr>
-
-            <div class="mb-3">
-                <label for="reason" class="form-label">推薦理由 <span class="text-danger">*</span></label>
-                <textarea class="form-control" id="reason" name="reason" rows="4" th:field="*{reason}" required></textarea>
-                <div th:if="${#fields.hasErrors('reason')}" th:errors="*{reason}" class="text-danger"></div>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">給店家打幾顆星？ <span class="text-danger">*</span></label>
+            <div class="col-6">
+                <label class="form-label">推薦評分
+                    <span th:if="${recommendDTO.userId == null}" class="text-danger"> *</span>
+                </label>
                 <div class="star-rating" id="starRatingContainer">
-                    <i class="fa-regular fa-star" data-value="1"></i>
+                    <i class="fa-star fa-regular fa-star" data-value="1"></i>
                     <i class="fa-regular fa-star" data-value="2"></i>
                     <i class="fa-regular fa-star" data-value="3"></i>
                     <i class="fa-regular fa-star" data-value="4"></i>
                     <i class="fa-regular fa-star" data-value="5"></i>
                 </div>
                 <input type="hidden" id="score" name="score" th:field="*{score}">
-                <div th:if="${#fields.hasErrors('score')}" th:errors="*{score}" class="text-danger"></div>
+                <p th:if="${#fields.hasErrors('score')}" th:errors="*{score}" class="text-danger small"></p>
             </div>
+        </div>
 
+        <div>
+            <label for="storeAddress" class="form-label">店家地址
+                <span th:if="${recommendDTO.userId == null}" class="text-danger"> *</span>
+            </label>
+            <input type="text" class="form-control" id="storeAddress" name="storeAddress" th:value="*{storeAddress}" required>
+            <p th:if="${#fields.hasErrors('storeAddress')}" th:errors="*{storeAddress}" class="text-danger small"></p>
+        </div>
+
+        <div>
+            <label for="reason" class="form-label">推薦原因
+                <span th:if="${recommendDTO.userId == null}" class="text-danger"> *</span>
+            </label>
+            <textarea class="form-control" id="reason" name="reason" rows="4" th:field="*{reason}" required></textarea>
+            <p th:if="${#fields.hasErrors('reason')}" th:errors="*{reason}" class="text-danger small"></p>
+        </div>
+
+
+        <div class="row">
+            <div class="col-6" th:if="*{storePhotoUrl != null and !#strings.isEmpty(storePhotoUrl)}">
+                <label class="form-label">目前圖片:</label>
+                <img th:src="*{storePhotoUrl}" alt="Current Store Photo" class="photo-preview img-fluid" />
+                <input type="hidden" th:field="*{storePhotoUrl}" />
+            </div>
+            <div class="col-6">
+                <label for="storePhoto" class="form-label">上傳圖片
+                    <span th:if="${recommendDTO.userId == null}" class="text-danger"> *</span>
+                </label>
+                <input type="file" class="form-control" id="storePhoto" name="storePhoto" accept="image/*">
+                <p th:if="${#fields.hasErrors('storePhoto')}" th:errors="*{storePhoto}" class="text-danger small"></p>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-center gap-3">
+            <a th:href="@{/personal-recommend}" class="btn btn-secondary">取消</a>
             <button type="submit" class="btn btn-primary" th:text="${recommendDTO.userId != null ? '更新推薦' : '新增推薦'}">新增推薦</button>
-            <a th:href="@{/personal-recommend}" class="btn btn-secondary ms-2">取消</a>
-        </form>
-    </div>
+        </div>
+    </form>
 </th:block>
 
 <th:block th:fragment="scripts">
@@ -88,33 +100,27 @@
             const starRatingContainer = document.getElementById('starRatingContainer');
             const stars = starRatingContainer.querySelectorAll('.fa-star');
 
-            // Function to update star appearance based on a given score
             function updateStars(currentScore) {
                 stars.forEach(star => {
                     const starValue = parseInt(star.dataset.value);
                     if (starValue <= currentScore) {
                         star.classList.remove('fa-regular');
-                        star.classList.add('fa-solid'); // Filled star
+                        star.classList.add('fa-solid');
                     } else {
                         star.classList.remove('fa-solid');
-                        star.classList.add('fa-regular'); // Empty star
+                        star.classList.add('fa-regular');
                     }
                 });
             }
 
-            // Set initial stars based on existing score (for edit mode)
             const initialScore = parseInt(scoreInput.value) || 0;
             updateStars(initialScore);
-
-            // Add click event listener to each star
             stars.forEach(star => {
                 star.addEventListener('click', function() {
                     const value = parseInt(this.dataset.value);
-                    scoreInput.value = value; // Update hidden input
-                    updateStars(value); // Update star appearance
+                    scoreInput.value = value;
+                    updateStars(value);
                 });
-
-                // Add mouseover event listener for hover effect
                 star.addEventListener('mouseover', function() {
                     const hoverValue = parseInt(this.dataset.value);
                     stars.forEach((s) => {
@@ -128,15 +134,12 @@
                         }
                     });
                 });
-
-                // Add mouseout event listener to revert to selected score
                 star.addEventListener('mouseout', function() {
-                    updateStars(parseInt(scoreInput.value) || 0); // Revert to current selected score
+                    updateStars(parseInt(scoreInput.value) || 0);
                 });
             });
         });
     </script>
 </th:block>
-
 </body>
 </html>

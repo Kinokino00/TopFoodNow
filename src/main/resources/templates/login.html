@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/layout :: layout(~{::head}, ~{::body/content}, ~{::body/scripts})}">
 <head>
-    <title>登入</title>
+    <title>登入 - Top Food Now</title>
 </head>
 <body>
 
 <th:block th:fragment="content">
-    <h1 class="text-center mb-4">登入</h1>
+    <h1 class="text-center my-4">登入</h1>
     <div class="row justify-content-center">
         <div class="col-md-6">
             <form th:action="@{/login}" method="post">
@@ -23,15 +23,14 @@
                     <p th:text="${error}"></p>
                 </div>
                 <div th:if="${param.error}" class="alert alert-danger" role="alert">
-                    <p>登入失敗，請檢查您的信箱或密碼是否正確。</p>
+                    登入失敗，請檢查您的信箱或密碼是否正確。
                 </div>
                 <div th:if="${param.logout}" class="alert alert-info" role="alert">
-                    <p>您已成功登出。</p>
+                    您已成功登出。
                 </div>
                 <div th:if="${param.emailSent}" class="alert alert-success" role="alert">
-                    <p>驗證信已發送，請檢查您的信箱以啟用帳戶。</p>
+                    驗證信已發送，請檢查您的信箱以啟用帳戶。
                 </div>
-
 
                 <button type="submit" class="btn btn-primary w-100">登入</button>
             </form>

@@ -6,7 +6,6 @@
         .card-header {
             display: flex;
             align-items: center;
-            height: 56px;
         }
         .card {
             position: relative;
@@ -19,6 +18,7 @@
             color: white;
             font-size: 14px;
             border-radius: 0 0 4px 0;
+            z-index: 10; /* 確保在圖片上方 */
         }
         .card-img-top {
             height: 112px;
@@ -30,6 +30,10 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        /* 新增一個樣式來處理 AI 推薦的圖片和內容佈局，使其與網紅推薦類似 */
+        .card-link-wrapper {
+            display: block; /* 讓連結佔滿圖片區域 */
+        }
     </style>
 </head>
 
@@ -37,25 +41,30 @@
 
 <th:block th:fragment="content">
     <div class="d-flex justify-content-end mt-4" th:if="${session.user != null}">
-        <a href="/personal-recommend/add" class="btn btn-primary me-2">推薦</a>
-        <a href="personal-recommend" class="btn btn-secondary">個人推薦</a>
+        <a href="/personal-recommend/add" class="btn btn-primary me-2">新增推薦</a>
+        <a href="/personal-recommend" class="btn btn-secondary">個人推薦</a>
     </div>
 
-    <div class="row mt-5">
+    <div class="row mt-4">
         <div class="col-md-6">
             <div class="card mb-4 shadow-sm">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="mb-0">AI 推薦</h5>
-                    <button type="button" class="btn btn-outline-primary" id="aiSearchButton">AI 搜尋</button>
+                    <h6 class="mb-0">AI 推薦</h6>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="aiSearchButton">AI 搜尋</button>
                 </div>
                 <div class="card-body" id="ai-recommend">
                     <div class="row g-3" id="ai-container">
-                        <div class="col-6" th:each="store : ${storeList}">
+                        <div class="col-6" th:each="recommend : ${randomRecommends}">
                             <div class="card">
-                                <img th:src="${store.photoUrl}" class="card-img-top" th:alt="${store.name}" onerror="this.onerror=null;this.src='/images/default-image.jpg';"/>
+                                <div class="card-user" th:text="${recommend.userName + '推薦'}"></div>
+                                <a th:href="@{/personal-recommend/{userId}/{storeId}(userId=${recommend.userId}, storeId=${recommend.storeId})}">
+                                    <img th:src="${recommend.storePhotoUrl}" class="card-img-top" th:alt="${recommend.storeName}" onerror="this.onerror=null;this.src='/images/default-image.jpg';"/>
+                                </a>
                                 <div class="card-body p-2">
-                                    <h6 class="card-title mb-1" th:text="${store.name}"></h6>
-                                    <p class="card-text small text-muted" th:text="${store.address}"></p>
+                                    <a th:href="@{/personal-recommend/{userId}/{storeId}(userId=${recommend.userId}, storeId=${recommend.storeId})}" class="text-decoration-none text-dark">
+                                        <h6 class="card-title mb-1" th:text="${recommend.storeName}"></h6>
+                                    </a>
+                                    <p class="card-text small text-muted" th:text="${recommend.storeAddress}"></p>
                                 </div>
                             </div>
                         </div>
@@ -66,20 +75,22 @@
 
         <div class="col-md-6">
             <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">網紅推薦</h5>
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0">網紅推薦</h6>
+                    <a href="/all-recommends" class="btn btn-outline-secondary btn-sm">查看更多</a>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-6" th:each="newStore : ${newStoreList}">
                             <div class="card">
-                                <div class="card-user">
-                                    <span th:text="${newStore.userName}"></span>
-                                    推薦
-                                </div>
-                                <img th:src="${newStore.storePhotoUrl}" class="card-img-top" th:alt="${newStore.storeName}"/>
+                                <div class="card-user" th:text="${newStore.userName + '推薦'}"></div>
+                                <a th:href="@{/personal-recommend/{userId}/{storeId}(userId=${newStore.userId}, storeId=${newStore.storeId})}">
+                                    <img th:src="${newStore.storePhotoUrl}" class="card-img-top" th:alt="${newStore.storeName}" onerror="this.onerror=null;this.src='/images/default-image.jpg';"/>
+                                </a>
                                 <div class="card-body p-2">
-                                    <h6 class="card-title mb-1" th:text="${newStore.storeName}"></h6>
+                                    <a th:href="@{/personal-recommend/{userId}/{storeId}(userId=${newStore.userId}, storeId=${newStore.storeId})}" class="text-decoration-none text-dark">
+                                        <h6 class="card-title mb-1" th:text="${newStore.storeName}"></h6>
+                                    </a>
                                     <p class="card-text small text-muted" th:text="${newStore.storeAddress}"></p>
                                 </div>
                             </div>
@@ -131,6 +142,5 @@
     });
     </script>
 </th:block>
-
 </body>
 </html>

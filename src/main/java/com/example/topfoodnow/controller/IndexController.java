@@ -14,14 +14,12 @@ import java.util.List;
 @Controller
 public class IndexController {
     @Autowired
-    private StoreService storeService;
-    @Autowired
     private RecommendService recommendService;
 
     @GetMapping("/")
     public String index(Model model) {
-        List<StoreModel> storeList = storeService.findRandom6Stores();
-        model.addAttribute("storeList", storeList);
+        List<RecommendDTO> randomRecommends = recommendService.findRandom6Recommends();
+        model.addAttribute("randomRecommends", randomRecommends);
 
         List<RecommendDTO> famousUserNewStoreList = recommendService.findLatestFamousUserRecommends(6);
         model.addAttribute("newStoreList", famousUserNewStoreList);

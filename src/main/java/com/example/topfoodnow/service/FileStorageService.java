@@ -1,12 +1,9 @@
-// src/main/java/com/example/topfoodnow/service/FileStorageService.java
-
 package com.example.topfoodnow.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.util.StringUtils;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,11 +21,8 @@ public class FileStorageService {
 
     private Path fileUploadLocation;
 
-    // 構造函數會在服務啟動時初始化儲存路徑
-    // 確保在 Service 啟動時創建好目錄
     public FileStorageService(@Value("${file.dynamic-content-base-dir}") String baseDir,
                               @Value("${file.upload-sub-dir}") String uploadDir) {
-        // 解析出完整的上傳目錄路徑
         this.fileUploadLocation = Paths.get(baseDir, uploadDir).toAbsolutePath().normalize();
         try {
             Files.createDirectories(this.fileUploadLocation);

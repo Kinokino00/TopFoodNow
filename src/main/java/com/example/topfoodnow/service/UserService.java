@@ -23,6 +23,15 @@ public class UserService {
     }
 
     /**
+     * 根據用戶 ID 查找用戶
+     * @param id 用戶 ID
+     * @return 如果找到用戶則返回 Optional<UserModel>，否則返回 Optional.empty()
+     */
+    public Optional<UserModel> findById(Integer id) {
+        return userRepository.findById(id);
+    }
+
+    /**
      * 根據電子郵件查找用戶
      * @param email 電子郵件地址
      * @return 如果找到用戶則返回 Optional<UserModel>，否則返回 Optional.empty()
@@ -37,22 +46,11 @@ public class UserService {
      * @return 儲存後的用戶模型
      */
     public UserModel addUser(UserModel user) {
-        // 1. 加密密碼
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        // 2. 生成驗證碼
         String verificationCode = UUID.randomUUID().toString();
         user.setVerificationCode(verificationCode);
-
-        // 3. 設定帳戶為未啟用
         user.setEnabled(false);
-
-        // 4. 儲存用戶
         UserModel savedUser = userRepository.save(user);
-
-        // 5. 寄送驗證信 (非同步執行可以避免阻塞主線程)
-        // Spring @Async 可以在這裡使用，但需要額外配置
-        // 為了簡潔，這裡直接呼叫，如果郵件發送慢可能影響用戶體驗
         mailService.sendVerificationEmail(user.getEmail(), user.getUserName(), verificationCode);
         return savedUser;
     }
@@ -107,7 +105,6 @@ public class UserService {
     public String createPasswordResetTokenForUser(UserModel user) {
         String token = UUID.randomUUID().toString();
 
-        // 將 Token 和過期時間直接存入 UserModel
         user.setResetPasswordToken(token);
         user.setResetPasswordExpiryDate(LocalDateTime.now().plusHours(1)); // Token 1 小時後過期
         userRepository.save(user);
@@ -126,7 +123,7 @@ public class UserService {
 
         if (userOptional.isEmpty()) {
             System.out.println("Token 不存在或不匹配: " + token);
-            return Optional.empty(); // Token 不存在或不匹配
+            return Optional.empty();
         }
 
         UserModel user = userOptional.get();
@@ -147,7 +144,6 @@ public class UserService {
      */
     public void changeUserPassword(UserModel user, String newPassword) {
         user.setPassword(passwordEncoder.encode(newPassword));
-        // 密碼重設成功後，清除 Token 和過期時間
         user.setResetPasswordToken(null);
         user.setResetPasswordExpiryDate(null);
         userRepository.save(user);

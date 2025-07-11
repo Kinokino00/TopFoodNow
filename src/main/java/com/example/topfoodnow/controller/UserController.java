@@ -1,27 +1,35 @@
 package com.example.topfoodnow.controller;
 
-import com.example.topfoodnow.dto.RecommendDTO;
 import com.example.topfoodnow.model.UserModel;
-import com.example.topfoodnow.model.StoreModel;
+import com.example.topfoodnow.dto.RecommendDTO;
+import com.example.topfoodnow.dto.LoginRequestDTO;
+import com.example.topfoodnow.dto.ForgotPasswordRequestDTO;
+import com.example.topfoodnow.dto.ResetPasswordRequestDTO;
 import com.example.topfoodnow.service.UserService;
 import com.example.topfoodnow.service.MailService;
-import com.example.topfoodnow.service.StoreService;
 import com.example.topfoodnow.service.RecommendService;
 import com.example.topfoodnow.service.FileStorageService;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpSession;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Controller;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import org.springframework.ui.Model;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +37,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Controller
-@RequiredArgsConstructor // 自動生成包含所有 final 欄位的建構子，並注入它們
+@RequiredArgsConstructor
+@Tag(name = "用戶與推薦管理", description = "處理用戶註冊、登入、密碼重設及個人推薦相關的Web頁面和表單提交。")
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -39,15 +48,35 @@ public class UserController {
     private final UserService userService;
     private final MailService mailService;
     private final RecommendService recommendService;
-    private final StoreService storeService;
     private final FileStorageService fileStorageService;
 
     @GetMapping("/register")
     public String showRegisterPage(Model model) {
-        model.addAttribute("user", new UserModel());
+        UserModel user = new UserModel();
+        user.setIsFamous(false);
+        model.addAttribute("user", user);
         return "register";
     }
 
+    @Operation(
+        summary = "處理用戶註冊",
+        description = "接收用戶提交的註冊信息，驗證後創建新用戶並發送驗證郵件。成功後重定向到註冊成功頁面，失敗則返回註冊頁並顯示錯誤。",
+        requestBody = @RequestBody(
+            description = "用戶註冊數據",
+            required = true,
+            content = @Content(
+                mediaType = "application/x-www-form-urlencoded",
+                schema = @Schema(implementation = UserModel.class)
+            )
+        ),
+        responses = {
+            @ApiResponse(responseCode = "302", description = "註冊成功，重定向至註冊成功頁面"),
+            @ApiResponse(responseCode = "200", description = "表單驗證失敗或郵件已註冊，返回註冊頁面並顯示錯誤",
+                content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "500", description = "伺服器內部錯誤",
+                content = @Content(schema = @Schema(implementation = String.class)))
+        }
+    )
     @PostMapping("/register")
     public String registerProcess(@Valid UserModel user,
                                   BindingResult bindingResult,
@@ -55,6 +84,7 @@ public class UserController {
                                   RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             logger.warn("註冊表單驗證失敗，錯誤數量: {}", bindingResult.getErrorCount());
+            model.addAttribute("user", user);
             return "register";
         }
 
@@ -76,13 +106,26 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "顯示註冊成功頁面", description = "返回註冊成功後的HTML確認頁面。")
+    @ApiResponse(responseCode = "200", description = "成功返回註冊成功頁面HTML")
     @GetMapping("/register-success")
     public String showRegisterSuccessPage(Model model) {
         model.addAttribute("pageTitle", "註冊成功");
         return "register-success";
     }
 
-
+    @Operation(
+        summary = "顯示登入頁面",
+        description = "返回用戶登入的HTML表單頁面。可選地顯示錯誤、登出或郵件發送成功訊息。",
+        parameters = {
+            @Parameter(name = "error", description = "登入失敗錯誤訊息", example = "信箱或密碼錯誤", required = false),
+            @Parameter(name = "logout", description = "登出成功訊息", example = "您已成功登出", required = false),
+            @Parameter(name = "emailSent", description = "驗證信發送成功訊息", example = "驗證信已發送", required = false)
+        },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "成功返回登入頁面HTML")
+        }
+    )
     @GetMapping("/login")
     public String showLoginPage(@RequestParam(value = "error", required = false) String error,
                                 @RequestParam(value = "logout", required = false) String logout,
@@ -104,6 +147,23 @@ public class UserController {
         return "login";
     }
 
+    @Operation(
+        summary = "處理用戶登入",
+        description = "接收用戶提交的登入憑證（信箱和密碼），驗證成功後設置會話並重定向到首頁。失敗則返回登入頁並顯示錯誤。",
+        requestBody = @RequestBody(
+            description = "用戶登入憑證",
+            required = true,
+            content = @Content(
+                mediaType = "application/x-www-form-urlencoded",
+                schema = @Schema(implementation = LoginRequestDTO.class)
+            )
+        ),
+        responses = {
+            @ApiResponse(responseCode = "302", description = "登入成功，重定向至首頁"),
+            @ApiResponse(responseCode = "200", description = "登入失敗，返回登入頁面並顯示錯誤",
+                content = @Content(schema = @Schema(implementation = String.class)))
+        }
+    )
     @PostMapping("/login")
     public String loginProcess(@RequestParam String email,
                                @RequestParam String password,
@@ -129,7 +189,37 @@ public class UserController {
         }
     }
 
-    // 登出
+    @Operation(
+        summary = "顯示個人推薦列表頁面",
+        description = "用戶登入後，顯示其個人推薦的餐廳列表頁面。",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "成功返回個人推薦列表HTML"),
+            @ApiResponse(responseCode = "302", description = "用戶未登入，重定向至登入頁")
+        }
+    )
+    @GetMapping("/personal-recommend")
+    public String showPersonalRecommendPage(Model model, HttpSession session) {
+        UserModel currentUser = (UserModel) session.getAttribute("user");
+        if (currentUser == null) {
+            logger.warn("未登入用戶嘗試訪問個人推薦頁面。");
+            return "redirect:/login";
+        }
+        try {
+            List<RecommendDTO> recommends = recommendService.getRecommendsByUserId(currentUser.getId());
+            model.addAttribute("recommends", recommends);
+            model.addAttribute("pageTitle", "我的推薦");
+            // **新增這一行，將用戶名稱添加到模型中**
+            model.addAttribute("userName", currentUser.getUserName());
+            return "personal-recommend";
+        } catch (Exception e) {
+            logger.error("加載個人推薦列表失敗，用戶ID: {}. 錯誤訊息: {}", currentUser.getId(), e.getMessage(), e);
+            model.addAttribute("errorMessage", "加載推薦列表失敗，請稍後再試。");
+            return "error-page";
+        }
+    }
+
+    @Operation(summary = "用戶登出", description = "清除用戶會話，並重定向到登入頁面。")
+    @ApiResponse(responseCode = "302", description = "成功登出，重定向至登入頁")
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         String userEmail = null;
@@ -141,13 +231,32 @@ public class UserController {
         return "redirect:/login?logout";
     }
 
-    // 忘記密碼
+    @Operation(summary = "顯示忘記密碼頁面", description = "返回忘記密碼的HTML表單頁面。")
+    @ApiResponse(responseCode = "200", description = "成功返回忘記密碼頁面HTML")
     @GetMapping("/forgot-password")
     public String showForgotPasswordPage(Model model) {
         model.addAttribute("pageTitle", "忘記密碼");
         return "forgot-password";
     }
 
+    @Operation(
+        summary = "處理忘記密碼請求",
+        description = "接收用戶信箱，如果存在則發送密碼重設連結到該信箱。",
+        requestBody = @RequestBody(
+            description = "忘記密碼請求",
+            required = true,
+            content = @Content(
+                mediaType = "application/x-www-form-urlencoded",
+                schema = @Schema(implementation = ForgotPasswordRequestDTO.class)
+            )
+        ),
+        responses = {
+            @ApiResponse(responseCode = "200", description = "已發送重設連結（如果信箱存在），返回忘記密碼頁面顯示訊息",
+                content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "500", description = "發送郵件失敗或其他伺服器錯誤",
+                content = @Content(schema = @Schema(implementation = String.class)))
+        }
+    )
     @PostMapping("/forgot-password")
     public String forgotPasswordProcess(@RequestParam("email") String email,
                                         Model model,
@@ -175,7 +284,17 @@ public class UserController {
         return "forgot-password";
     }
 
-    // 重設密碼
+    @Operation(
+        summary = "顯示重設密碼頁面",
+        description = "驗證重設密碼Token的有效性，並返回重設密碼的HTML表單頁面。無效Token將重定向或顯示錯誤。",
+        parameters = {
+            @Parameter(name = "token", description = "密碼重設Token", required = true, example = "a1b2c3d4e5f6")
+        },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Token有效，成功返回重設密碼頁面HTML"),
+            @ApiResponse(responseCode = "302", description = "Token無效或過期，重定向至忘記密碼頁面")
+        }
+    )
     @GetMapping("/reset-password")
     public String showResetPasswordPage(@RequestParam("token") String token, Model model) {
         model.addAttribute("pageTitle", "重設密碼");
@@ -191,6 +310,24 @@ public class UserController {
         return "reset-password";
     }
 
+    @Operation(
+        summary = "處理重設密碼請求",
+        description = "接收重設密碼Token及新密碼，驗證後更新用戶密碼。成功後重定向到登入頁，失敗則返回重設密碼頁並顯示錯誤。",
+        requestBody = @RequestBody(
+            description = "新密碼數據",
+            required = true,
+            content = @Content(
+                mediaType = "application/x-www-form-urlencoded",
+                schema = @Schema(implementation = ResetPasswordRequestDTO.class)
+            )
+        ),
+        responses = {
+            @ApiResponse(responseCode = "302", description = "密碼重設成功，重定向至登入頁"),
+            @ApiResponse(responseCode = "200", description = "密碼驗證失敗，返回重設密碼頁面顯示錯誤",
+                content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "302", description = "Token無效或過期，重定向至忘記密碼頁面")
+        }
+    )
     @PostMapping("/reset-password")
     public String resetPasswordProcess(@RequestParam("token") String token,
                                        @RequestParam("newPassword") String newPassword,
@@ -227,32 +364,41 @@ public class UserController {
         return "redirect:/login";
     }
 
-    // 個人推薦
-    @GetMapping("/personal-recommend")
-    public String showPersonalRecommend(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
-        UserModel currentUser = (UserModel) session.getAttribute("user");
-        if (currentUser == null) {
-            logger.warn("未登入用戶嘗試訪問個人推薦頁面。");
-            return "redirect:/login";
+    @Operation(
+        summary = "顯示新增推薦表單頁面",
+        description = "返回用於用戶新增餐廳推薦的HTML表單頁面。",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "成功返回新增推薦表單HTML"),
+            @ApiResponse(responseCode = "302", description = "用戶未登入，重定向至登入頁")
         }
-        List<RecommendDTO> userRecommends = recommendService.getRecommendByUserId(currentUser);
-        model.addAttribute("userName", currentUser.getUserName());
-        model.addAttribute("recommends", userRecommends);
-        model.addAttribute("pageTitle", "我的推薦");
-        return "personal-recommend";
-    }
-
+    )
     @GetMapping("/personal-recommend/add")
     public String showAddRecommendForm(Model model, HttpSession session) {
         if (session.getAttribute("user") == null) {
             return "redirect:/login";
         }
-        model.addAttribute("pageTitle", "新增我的推薦");
         model.addAttribute("recommendDTO", new RecommendDTO());
         return "recommend-form";
     }
 
-    // 處理新增推薦的提交
+    @Operation(
+        summary = "處理新增推薦提交",
+        description = "接收用戶提交的餐廳推薦信息（包含店家詳情和推薦原因/評分，可選上傳圖片），驗證後保存。成功後重定向到個人推薦列表頁面。",
+        requestBody = @RequestBody(
+            description = "推薦信息和可選的店家圖片",
+            required = true,
+            content = @Content(
+                mediaType = "multipart/form-data",
+                schema = @Schema(implementation = RecommendDTO.class)
+            )
+        ),
+        responses = {
+            @ApiResponse(responseCode = "302", description = "推薦新增成功，重定向至個人推薦列表頁"),
+            @ApiResponse(responseCode = "200", description = "表單驗證失敗，返回新增推薦表單頁面並顯示錯誤",
+                content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "302", description = "用戶未登入或新增失敗，重定向到登入頁或新增頁面並顯示錯誤")
+        }
+    )
     @PostMapping("/personal-recommend/add")
     public String addRecommendProcess(@ModelAttribute("recommendDTO") @Validated RecommendDTO recommendDTO,
                                       BindingResult bindingResult,
@@ -283,7 +429,6 @@ public class UserController {
 
         if (bindingResult.hasErrors()) {
             logger.warn("新增推薦表單驗證失敗。");
-            model.addAttribute("pageTitle", "新增我的推薦");
             model.addAttribute("recommendDTO", recommendDTO);
             return "recommend-form";
         }
@@ -308,29 +453,17 @@ public class UserController {
         }
     }
 
-    // 處理刪除推薦
-    @PostMapping("/personal-recommend/delete/{storeId}")
-    public String deleteRecommend(@PathVariable("storeId") Integer storeId,
-                                  HttpSession session,
-                                  RedirectAttributes redirectAttributes) {
-        UserModel currentUser = (UserModel) session.getAttribute("user");
-        if (currentUser == null) {
-            return "redirect:/login";
+    @Operation(
+        summary = "顯示編輯推薦表單頁面",
+        description = "根據店家ID顯示用戶編輯現有推薦的HTML表單頁面。",
+        parameters = {
+            @Parameter(name = "storeId", description = "要編輯的店家ID", required = true, example = "101")
+        },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "成功返回編輯推薦表單HTML"),
+            @ApiResponse(responseCode = "302", description = "用戶未登入、找不到推薦或無權編輯，重定向到登入頁或個人推薦列表頁")
         }
-        try {
-            recommendService.deleteRecommend(currentUser.getId(), storeId, currentUser);
-            redirectAttributes.addFlashAttribute("successMessage", "推薦已成功刪除。");
-        } catch (EntityNotFoundException | SecurityException e) {
-            logger.error("刪除推薦失敗：{}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        } catch (Exception e) {
-            logger.error("刪除推薦失敗：{}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "刪除推薦失敗，請重試。");
-        }
-        return "redirect:/personal-recommend";
-    }
-
-    // 顯示編輯推薦的表單
+    )
     @GetMapping("/personal-recommend/edit/{storeId}")
     public String showEditRecommendForm(@PathVariable("storeId") Integer storeId,
                                         Model model,
@@ -342,7 +475,7 @@ public class UserController {
             return "redirect:/login";
         }
         try {
-            Optional<RecommendDTO> recommendDTOOptional = recommendService.getRecommendByUserAndStoreId(currentUser, storeId);
+            Optional<RecommendDTO> recommendDTOOptional = recommendService.getRecommendByUserAndStoreId(currentUser.getId(), storeId); // <-- 修改這裡
             if (recommendDTOOptional.isPresent()) {
                 model.addAttribute("pageTitle", "編輯我的推薦");
                 model.addAttribute("recommendDTO", recommendDTOOptional.get());
@@ -359,7 +492,27 @@ public class UserController {
         }
     }
 
-    // 處理編輯推薦的提交
+    @Operation(
+        summary = "處理更新推薦提交",
+        description = "接收用戶提交的更新後的餐廳推薦信息（包含店家詳情和推薦原因/評分，可選上傳圖片），驗證後更新保存。成功後重定向到個人推薦列表頁面。",
+        parameters = {
+            @Parameter(name = "storeId", description = "要更新的店家ID", required = true, example = "101", in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH)
+        },
+        requestBody = @RequestBody(
+            description = "更新後的推薦信息和可選的店家圖片",
+            required = true,
+            content = @Content(
+                mediaType = "multipart/form-data",
+                schema = @Schema(implementation = RecommendDTO.class)
+            )
+        ),
+        responses = {
+            @ApiResponse(responseCode = "302", description = "推薦更新成功，重定向至個人推薦列表頁"),
+            @ApiResponse(responseCode = "200", description = "表單驗證失敗，返回編輯推薦表單頁面並顯示錯誤",
+                content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "302", description = "用戶未登入、找不到推薦或無權更新，重定向到登入頁或編輯頁面並顯示錯誤")
+        }
+    )
     @PostMapping("/personal-recommend/edit/{storeId}")
     public String updateRecommendProcess(@PathVariable("storeId") Integer pathStoreId,
                                          @ModelAttribute("recommendDTO") @Validated RecommendDTO recommendDTO,
@@ -376,32 +529,20 @@ public class UserController {
             bindingResult.rejectValue("storeId", "error.recommendDTO", "無效的編輯請求，店家ID不匹配。");
         }
 
-        if (recommendDTO.getStoreName() == null || recommendDTO.getStoreName().trim().isEmpty()) {
-            bindingResult.rejectValue("storeName", "error.recommendDTO", "店家名稱不能為空！");
-        }
-        if (recommendDTO.getStoreAddress() == null || recommendDTO.getStoreAddress().trim().isEmpty()) {
-            bindingResult.rejectValue("storeAddress", "error.recommendDTO", "店家地址不能為空！");
-        }
-        if (recommendDTO.getScore() == null || recommendDTO.getScore() < 1 || recommendDTO.getScore() > 5) {
-            bindingResult.rejectValue("score", "error.recommendDTO", "請選擇有效的星級評分！");
-        }
-
         if (bindingResult.hasErrors()) {
             logger.warn("編輯推薦表單驗證失敗。");
             model.addAttribute("pageTitle", "編輯我的推薦");
             model.addAttribute("recommendDTO", recommendDTO);
             return "recommend-form";
         }
+
         try {
             if (recommendDTO.getStorePhoto() != null && !recommendDTO.getStorePhoto().isEmpty()) {
                 String photoUrl = fileStorageService.uploadFile(recommendDTO.getStorePhoto());
                 recommendDTO.setStorePhotoUrl(photoUrl);
-            } else {
-                Optional<StoreModel> existingStore = storeService.getStoreById(recommendDTO.getStoreId());
-                existingStore.ifPresent(s -> recommendDTO.setStorePhotoUrl(s.getPhotoUrl()));
             }
-
             recommendService.updateRecommend(recommendDTO, currentUser);
+
             redirectAttributes.addFlashAttribute("successMessage", "推薦更新成功！");
             return "redirect:/personal-recommend";
         } catch (SecurityException | EntityNotFoundException e) {
@@ -417,5 +558,40 @@ public class UserController {
             model.addAttribute("recommendDTO", recommendDTO);
             return "recommend-form";
         }
+    }
+
+    @Operation(
+        summary = "處理刪除推薦請求",
+        description = "接收用戶刪除推薦的請求，根據店家ID刪除用戶的推薦。成功後重定向到個人推薦列表頁面。",
+        parameters = {
+            @Parameter(name = "storeId", description = "要刪除的店家ID", required = true, example = "101", in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH)
+        },
+        responses = {
+            @ApiResponse(responseCode = "302", description = "推薦刪除成功，重定向至個人推薦列表頁"),
+            @ApiResponse(responseCode = "302", description = "用戶未登入、找不到推薦或無權刪除，重定向到登入頁或個人推薦列表頁並顯示錯誤")
+        }
+    )
+    @PostMapping("/personal-recommend/delete/{storeId}")
+    public String deleteRecommendProcess(@PathVariable("storeId") Integer storeId,
+                                         HttpSession session,
+                                         RedirectAttributes redirectAttributes) {
+        UserModel currentUser = (UserModel) session.getAttribute("user");
+        if (currentUser == null) {
+            logger.warn("未登入用戶嘗試刪除推薦，店家ID: {}", storeId);
+            return "redirect:/login";
+        }
+
+        try {
+            recommendService.deleteRecommend(currentUser.getId(), storeId, currentUser);
+            redirectAttributes.addFlashAttribute("successMessage", "推薦已成功刪除！");
+            logger.info("用戶 ID: {} 成功刪除對店家 ID: {} 的推薦。", currentUser.getId(), storeId);
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            logger.error("刪除推薦失敗：找不到推薦或無權限。用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUser.getId(), storeId, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) {
+            logger.error("刪除推薦時發生未知錯誤。用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUser.getId(), storeId, e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "刪除推薦失敗，請稍後再試。");
+        }
+        return "redirect:/personal-recommend";
     }
 }
