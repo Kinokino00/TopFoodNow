@@ -1,0 +1,56 @@
+.checkBoxItems {
+  @apply flex items-center py-1 min-w-fit;
+  .labelText {
+    @apply pl-2;
+  }
+}
+.checkboxRadio {
+  @apply relative flex items-center rounded-full cursor-pointer;
+
+  input[type='checkbox'], input[type='radio'] {
+    @apply relative h-5 w-5 bg-white border border-gray-200 cursor-pointer appearance-none transition-all hover:border-primary-400 focus:shadow-primary;
+    &:checked {
+      @apply border-primary-500 bg-primary-500 hover:bg-primary-600;
+    }
+    &:disabled {
+      &, &:hover {
+        @apply bg-gray-100 border-gray-200 shadow-none cursor-auto;
+      }
+      &:checked {
+        &, &:hover {
+          @apply bg-gray-400;
+        }
+        ~span svg {
+          @apply fill-gray-100 text-gray-100;
+        }
+      }
+    }
+    ~span {
+      @apply absolute z-10 top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 text-white fill-white opacity-0 pointer-events-none transition-opacity;
+      svg {
+        @apply h-3.5 w-3.5;
+      }
+    }
+  }
+  input[type='checkbox'] {
+    @apply rounded-md;
+    ~span svg {
+      @apply h-3.5 w-3.5;
+    }
+  }
+  input[type='radio'] {
+    @apply rounded-full;
+    ~span svg {
+      @apply h-2 w-2;
+    }
+  }
+
+  &Error {
+    input[type='checkbox'], input[type='radio'] {
+      @apply focus:shadow-danger;
+      &, &:hover {
+        @apply border-danger-500;
+      }
+    }
+  }
+}

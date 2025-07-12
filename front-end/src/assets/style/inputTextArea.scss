@@ -1,0 +1,85 @@
+// input與textarea共用設定
+.inputDiv {
+  @apply w-full min-h-10 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg overflow-hidden focus-within:shadow-primary;
+  &:hover, &:focus, &:focus-within, &:focus-visible {
+    @apply border-primary-400;
+  }
+  &:has(input:disabled, textarea:disabled) {
+    @apply bg-gray-50 text-gray-500 border-gray-200;
+  }
+
+  input, textarea {
+    @apply w-full text-sm placeholder:text-gray-300 focus:outline-0;
+  }
+  textarea {
+    @apply -mb-1.5 indent-1 disabled:resize-none;
+  }
+
+  &Error {
+    @apply text-gray-600 focus:shadow-danger;
+    &, &:hover, &:focus, &:focus-within, &:focus-visible {
+      @apply border-danger-500;
+    }
+  }
+  &Readonly {
+    &, &:hover, &:focus, &:focus-within, &:focus-visible, input, textarea {
+      @apply bg-transparent border-transparent shadow-none;
+    }
+    input {
+      @apply cursor-auto;
+    }
+    textarea {
+      @apply cursor-auto resize-none;
+    }
+  }
+
+  &.inputNumber {
+    @apply pr-0;
+    input {
+      @apply text-right font-normal placeholder:text-left;
+    }
+    &.roundedFull {
+      @apply rounded-full;
+    }
+    &Paginate {
+      @apply relative p-0 w-[62px] min-h-5 max-h-5 border-primary-200;
+      input {
+        @apply absolute bottom-1/2 translate-y-1/2 text-center indent-3 text-xs;
+      }
+    }
+  }
+
+  &.chipsDiv {
+    @apply py-0.5;
+    .p-chips {
+      &, .p-chips-multiple-container {
+        @apply w-full border-transparent shadow-none;
+        &:has(input:disabled) {
+          @apply bg-gray-50;
+        }
+      }
+      .p-chips-token {
+        @apply py-0.5 bg-gray-50 rounded;
+      }
+    }
+    &Readonly.inputDiv {
+      &, .p-chips-multiple-container {
+        @apply bg-transparent border-transparent;
+      }
+      .p-chips {
+        &, .p-chips-multiple-container {
+          .p-icon.p-chips-token-icon {
+            @apply hidden;
+          }
+        }
+      }
+    }
+  }
+}
+
+.chips {
+  @apply flex items-center;
+  .labelText {
+    @apply mr-2 text-end text-sm;
+  }
+}

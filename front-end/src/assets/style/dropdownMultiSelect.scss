@@ -1,0 +1,33 @@
+.inputDiv {
+  @apply flex items-center justify-between cursor-pointer;
+  .input[readonly] {
+    @apply cursor-pointer;
+  }
+}
+.button {
+  &-arrow {
+    @apply relative;
+    &:after {
+      @apply content-['\f078'] absolute right-0 -translate-y-1/2 py-1.5 px-2 bg-white font-fontAwesome font-black text-xs text-gray-600 leading-4 rounded-lg;
+    }
+  }
+}
+.filter {
+  &-container {
+    @apply relative mb-2;
+  }
+  &-input {
+    @apply w-full p-2 border border-gray-200 rounded;
+  }
+}
+.option {
+  &-container {
+    @apply absolute z-10 p-2 bg-white border border-gray-200 rounded-lg;
+  }
+  &-item {
+    @apply p-1.5;
+    &:hover {
+      @apply text-white bg-primary-400;
+    }
+  }
+}
