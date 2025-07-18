@@ -30,7 +30,7 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Recom
             "JOIN FETCH r.store s " +
             "WHERE (:isFamousFilter IS NULL OR u.isFamous = :isFamousFilter) " +
             "AND (:searchTerm IS NULL OR :searchTerm = '' " +
-            "       OR LOWER(u.userName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+            "       OR LOWER(u.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
             "       OR LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
             "       OR LOWER(s.address) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
             "ORDER BY r.createdAt DESC")

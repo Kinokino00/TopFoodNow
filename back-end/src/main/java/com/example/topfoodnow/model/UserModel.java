@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import lombok.*;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Set;
 
 @Entity
 @Table(name = "user")
@@ -38,7 +39,7 @@ public class UserModel {
     @NonNull
     @NotBlank(message = "名稱不可為空")
     @Schema(description = "用戶名稱", example = "John Doe")
-    private String userName;
+    private String name;
 
     @Column(name = "is_famous", nullable = false, columnDefinition = "BIT(1) DEFAULT 0")
     @Schema(description = "是否為網紅", example = "false")
@@ -60,8 +61,11 @@ public class UserModel {
     @Column(name = "reset_password_expiry_date")
     @Schema(description = "重設密碼Token過期時間", example = "2025-07-15T10:00:00", accessMode = Schema.AccessMode.READ_ONLY, nullable = true)
     private LocalDateTime resetPasswordExpiryDate;
-
     public boolean isResetPasswordTokenExpired() {
         return this.resetPasswordExpiryDate != null && LocalDateTime.now().isAfter(this.resetPasswordExpiryDate);
     }
+
+    @ManyToOne(fetch = FetchType.EAGER) // 通常角色資訊會立即加載
+    @JoinColumn(name = "role_id", nullable = false)
+    private RoleModel role;
 }

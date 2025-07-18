@@ -1,44 +1,47 @@
 package com.example.topfoodnow.controller;
 
 import com.example.topfoodnow.model.UserModel;
-import com.example.topfoodnow.dto.RecommendDTO;
 import com.example.topfoodnow.dto.LoginRequestDTO;
 import com.example.topfoodnow.dto.ForgotPasswordRequestDTO;
 import com.example.topfoodnow.dto.ResetPasswordRequestDTO;
 import com.example.topfoodnow.service.UserService;
 import com.example.topfoodnow.service.MailService;
-import com.example.topfoodnow.service.RecommendService;
-import com.example.topfoodnow.service.FileStorageService;
+import com.example.topfoodnow.service.LogService;
+import com.example.topfoodnow.dto.AuthResponseDTO;
+import com.example.topfoodnow.dto.UserProfileUpdateDTO;
+import com.example.topfoodnow.util.JwtUtil;
 import jakarta.validation.Valid;
-import jakarta.servlet.http.HttpSession;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor; // 確保這個導入
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import org.springframework.ui.Model;
-import org.springframework.stereotype.Controller;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
+import java.io.IOException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
-@Controller
+
+@RestController
 @RequiredArgsConstructor
-@Tag(name = "用戶與推薦管理", description = "處理用戶註冊、登入、密碼重設及個人推薦相關的Web頁面和表單提交。")
+@RequestMapping("/api/auth")
+@Tag(name = "用戶認證與管理")
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -47,551 +50,334 @@ public class UserController {
 
     private final UserService userService;
     private final MailService mailService;
-    private final RecommendService recommendService;
-    private final FileStorageService fileStorageService;
+    private final LogService logService;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
 
-    @GetMapping("/register")
-    public String showRegisterPage(Model model) {
-        UserModel user = new UserModel();
-        user.setIsFamous(false);
-        model.addAttribute("user", user);
-        return "register";
+    // region 輔助方法
+    /**
+     * @param principal Spring Security 提供的當前認證用戶資訊
+     * @return 如果成功獲取到當前用戶的 ID，則返回該 ID (Integer)；否則返回 null，表示用戶未登入或系統中不存在與 Principal 關聯的用戶
+     */
+    private Integer getCurrentUserId(Principal principal) {
+        if (principal == null) {
+            logger.debug("getCurrentUserId: Principal is null, user not logged in.");
+            return null;
+        }
+        String principalName = principal.getName();
+        Optional<UserModel> userOptional = userService.findByEmail(principalName);
+        if (userOptional.isPresent()) {
+            logger.debug("getCurrentUserId: Found UserModel for email {}, ID: {}", principalName, userOptional.get().getId());
+            return userOptional.get().getId();
+        } else {
+            logger.warn("getCurrentUserId: UserService 找不到對應於郵箱 {} 的用戶。這可能表示數據不一致。", principalName);
+            return null;
+        }
     }
+    // endregion
 
+    // region 註冊
     @Operation(
-        summary = "處理用戶註冊",
-        description = "接收用戶提交的註冊信息，驗證後創建新用戶並發送驗證郵件。成功後重定向到註冊成功頁面，失敗則返回註冊頁並顯示錯誤。",
-        requestBody = @RequestBody(
-            description = "用戶註冊數據",
+        summary = "註冊",
+        description = "接收用戶提交的註冊信息，驗證後創建新用戶並發送驗證郵件。返回註冊結果。",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "用戶註冊數據，JSON 格式",
             required = true,
             content = @Content(
-                mediaType = "application/x-www-form-urlencoded",
+                mediaType = "application/json",
                 schema = @Schema(implementation = UserModel.class)
             )
         ),
         responses = {
-            @ApiResponse(responseCode = "302", description = "註冊成功，重定向至註冊成功頁面"),
-            @ApiResponse(responseCode = "200", description = "表單驗證失敗或郵件已註冊，返回註冊頁面並顯示錯誤",
-                content = @Content(schema = @Schema(implementation = String.class))),
-            @ApiResponse(responseCode = "500", description = "伺服器內部錯誤",
-                content = @Content(schema = @Schema(implementation = String.class)))
+            @ApiResponse(responseCode = "201", description = "用戶註冊成功，帳戶待驗證"),
+            @ApiResponse(responseCode = "400", description = "請求數據無效或電子郵件已被註冊"),
+            @ApiResponse(responseCode = "500", description = "伺服器內部錯誤，如郵件發送失敗")
         }
     )
     @PostMapping("/register")
-    public String registerProcess(@Valid UserModel user,
-                                  BindingResult bindingResult,
-                                  Model model,
-                                  RedirectAttributes redirectAttributes) {
+    public ResponseEntity<String> registerProcess(@Valid @RequestBody UserModel user, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             logger.warn("註冊表單驗證失敗，錯誤數量: {}", bindingResult.getErrorCount());
-            model.addAttribute("user", user);
-            return "register";
+            return ResponseEntity.badRequest().body("註冊數據無效: " + bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
 
         try {
             if (userService.findByEmail(user.getEmail()).isPresent()) {
                 logger.warn("註冊嘗試：電子郵件 {} 已被註冊。", user.getEmail());
-                model.addAttribute("error", "該電子郵件已被註冊，請使用其他信箱。");
-                model.addAttribute("user", user);
-                return "register";
+                return ResponseEntity.badRequest().body("該電子郵件已被註冊，請使用其他信箱。");
             }
             userService.addUser(user);
             logger.info("新用戶 {} 註冊成功，驗證信已發送。", user.getEmail());
-            redirectAttributes.addFlashAttribute("email", user.getEmail());
-            return "redirect:/register-success";
+            return ResponseEntity.status(HttpStatus.CREATED).body("用戶註冊成功，請檢查您的信箱完成帳戶驗證。");
         } catch (Exception e) {
             logger.error("用戶註冊失敗，Email: {}. 錯誤訊息: {}", user.getEmail(), e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("error", "註冊失敗，請稍後再試。");
-            return "redirect:/register";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("註冊失敗，請稍後再試。");
         }
     }
+    // endregion
 
-    @Operation(summary = "顯示註冊成功頁面", description = "返回註冊成功後的HTML確認頁面。")
-    @ApiResponse(responseCode = "200", description = "成功返回註冊成功頁面HTML")
-    @GetMapping("/register-success")
-    public String showRegisterSuccessPage(Model model) {
-        model.addAttribute("pageTitle", "註冊成功");
-        return "register-success";
-    }
-
+    // region 登入
     @Operation(
-        summary = "顯示登入頁面",
-        description = "返回用戶登入的HTML表單頁面。可選地顯示錯誤、登出或郵件發送成功訊息。",
-        parameters = {
-            @Parameter(name = "error", description = "登入失敗錯誤訊息", example = "信箱或密碼錯誤", required = false),
-            @Parameter(name = "logout", description = "登出成功訊息", example = "您已成功登出", required = false),
-            @Parameter(name = "emailSent", description = "驗證信發送成功訊息", example = "驗證信已發送", required = false)
-        },
-        responses = {
-            @ApiResponse(responseCode = "200", description = "成功返回登入頁面HTML")
-        }
-    )
-    @GetMapping("/login")
-    public String showLoginPage(@RequestParam(value = "error", required = false) String error,
-                                @RequestParam(value = "logout", required = false) String logout,
-                                @RequestParam(value = "emailSent", required = false) String emailSent,
-                                Model model) {
-        model.addAttribute("pageTitle", "用戶登入");
-        if (error != null) {
-            logger.warn("登入頁面顯示錯誤訊息：{}", error);
-            model.addAttribute("error", "信箱或密碼錯誤，請再試一次。");
-        }
-        if (logout != null) {
-            logger.info("登入頁面顯示登出訊息：{}", logout);
-            model.addAttribute("logout", "您已成功登出。");
-        }
-        if (emailSent != null) {
-            logger.info("登入頁面顯示驗證信已發送訊息：{}", emailSent);
-            model.addAttribute("emailSent", "驗證信已發送，請檢查您的信箱以啟用帳戶。");
-        }
-        return "login";
-    }
-
-    @Operation(
-        summary = "處理用戶登入",
-        description = "接收用戶提交的登入憑證（信箱和密碼），驗證成功後設置會話並重定向到首頁。失敗則返回登入頁並顯示錯誤。",
-        requestBody = @RequestBody(
-            description = "用戶登入憑證",
-            required = true,
-            content = @Content(
-                mediaType = "application/x-www-form-urlencoded",
-                schema = @Schema(implementation = LoginRequestDTO.class)
-            )
-        ),
-        responses = {
-            @ApiResponse(responseCode = "302", description = "登入成功，重定向至首頁"),
-            @ApiResponse(responseCode = "200", description = "登入失敗，返回登入頁面並顯示錯誤",
-                content = @Content(schema = @Schema(implementation = String.class)))
-        }
+            summary = "登入",
+            description = "接收用戶登入憑證（信箱和密碼），驗證成功後返回 JWT Token，失敗則返回錯誤。",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "用戶登入憑證，JSON 格式",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LoginRequestDTO.class)
+                    )
+            ),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "登入成功，返回 JWT Token"),
+                    @ApiResponse(responseCode = "401", description = "信箱或密碼錯誤，或帳戶未啟用")
+            }
     )
     @PostMapping("/login")
-    public String loginProcess(@RequestParam String email,
-                               @RequestParam String password,
-                               HttpSession session,
-                               Model model,
-                               RedirectAttributes redirectAttributes) {
-        model.addAttribute("pageTitle", "用戶登入");
+    public ResponseEntity<AuthResponseDTO> loginProcess(@Valid @RequestBody LoginRequestDTO loginRequest,
+                                                        BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            logger.warn("登入請求數據無效。");
+            return ResponseEntity.badRequest().body(new AuthResponseDTO(false, "登入數據無效。", null, null));
+        }
 
-        UserModel authenticatedUser = userService.authenticate(email, password);
-        if (authenticatedUser != null) {
-            if (!authenticatedUser.isEnabled()) {
-                logger.warn("登入嘗試失敗：用戶 {} 帳戶未啟用。", email);
-                model.addAttribute("error", "您的帳戶尚未啟用，請檢查您的信箱完成驗證。");
-                return "login";
-            }
-            session.setAttribute("user", authenticatedUser);
-            logger.info("用戶 {} 登入成功。", email);
-            return "redirect:/";
-        } else {
-            logger.warn("登入嘗試失敗：Email 或密碼不正確，嘗試登入的 Email: {}", email);
-            model.addAttribute("error", "信箱或密碼不正確，請再試一次。");
-            return "login";
-        }
-    }
-
-    @Operation(
-        summary = "顯示個人推薦列表頁面",
-        description = "用戶登入後，顯示其個人推薦的餐廳列表頁面。",
-        responses = {
-            @ApiResponse(responseCode = "200", description = "成功返回個人推薦列表HTML"),
-            @ApiResponse(responseCode = "302", description = "用戶未登入，重定向至登入頁")
-        }
-    )
-    @GetMapping("/personal-recommend")
-    public String showPersonalRecommendPage(Model model, HttpSession session) {
-        UserModel currentUser = (UserModel) session.getAttribute("user");
-        if (currentUser == null) {
-            logger.warn("未登入用戶嘗試訪問個人推薦頁面。");
-            return "redirect:/login";
-        }
         try {
-            List<RecommendDTO> recommends = recommendService.getRecommendsByUserId(currentUser.getId());
-            model.addAttribute("recommends", recommends);
-            model.addAttribute("pageTitle", "我的推薦");
-            // **新增這一行，將用戶名稱添加到模型中**
-            model.addAttribute("userName", currentUser.getUserName());
-            return "personal-recommend";
-        } catch (Exception e) {
-            logger.error("加載個人推薦列表失敗，用戶ID: {}. 錯誤訊息: {}", currentUser.getId(), e.getMessage(), e);
-            model.addAttribute("errorMessage", "加載推薦列表失敗，請稍後再試。");
-            return "error-page";
+            // 使用 AuthenticationManager 進行身份驗證
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+            );
+        } catch (DisabledException e) {
+            logger.warn("登入嘗試失敗：用戶 {} 帳戶未啟用。", loginRequest.getEmail());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthResponseDTO(false, "您的帳戶尚未啟用，請檢查您的信箱完成驗證。", null, null));
+        } catch (BadCredentialsException e) {
+            logger.warn("登入嘗試失敗：Email 或密碼不正確，嘗試登入的 Email: {}", loginRequest.getEmail());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthResponseDTO(false, "信箱或密碼不正確，請再試一次。", null, null));
         }
-    }
 
-    @Operation(summary = "用戶登出", description = "清除用戶會話，並重定向到登入頁面。")
-    @ApiResponse(responseCode = "302", description = "成功登出，重定向至登入頁")
-    @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        String userEmail = null;
-        if (session.getAttribute("user") instanceof UserModel) {
-            userEmail = ((UserModel) session.getAttribute("user")).getEmail();
-        }
-        session.invalidate();
-        logger.info("用戶 {} 登出成功。", userEmail != null ? userEmail : "未知用戶");
-        return "redirect:/login?logout";
-    }
+        // 如果身份驗證成功，則生成 JWT token
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
+        final String jwt = jwtUtil.generateToken(userDetails);
 
-    @Operation(summary = "顯示忘記密碼頁面", description = "返回忘記密碼的HTML表單頁面。")
-    @ApiResponse(responseCode = "200", description = "成功返回忘記密碼頁面HTML")
-    @GetMapping("/forgot-password")
-    public String showForgotPasswordPage(Model model) {
-        model.addAttribute("pageTitle", "忘記密碼");
-        return "forgot-password";
+        logger.info("用戶 {} 登入成功，已生成 JWT Token。", loginRequest.getEmail());
+        return ResponseEntity.ok(new AuthResponseDTO(true, "登入成功。", jwt, userDetails.getUsername()));
     }
+    // endregion
 
+    // region 重設密碼
     @Operation(
-        summary = "處理忘記密碼請求",
-        description = "接收用戶信箱，如果存在則發送密碼重設連結到該信箱。",
-        requestBody = @RequestBody(
-            description = "忘記密碼請求",
+        summary = "重設密碼",
+        description = "接收用戶信箱，如果存在則發送密碼重設連結到該信箱。無論信箱是否存在，都返回成功信息以防止信息洩露。",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "忘記密碼請求，JSON 格式",
             required = true,
             content = @Content(
-                mediaType = "application/x-www-form-urlencoded",
+                mediaType = "application/json",
                 schema = @Schema(implementation = ForgotPasswordRequestDTO.class)
             )
         ),
         responses = {
-            @ApiResponse(responseCode = "200", description = "已發送重設連結（如果信箱存在），返回忘記密碼頁面顯示訊息",
-                content = @Content(schema = @Schema(implementation = String.class))),
-            @ApiResponse(responseCode = "500", description = "發送郵件失敗或其他伺服器錯誤",
-                content = @Content(schema = @Schema(implementation = String.class)))
+            @ApiResponse(responseCode = "200", description = "重設密碼連結已發送（或已處理請求）。"),
+            @ApiResponse(responseCode = "500", description = "伺服器內部錯誤，如郵件發送失敗")
         }
     )
     @PostMapping("/forgot-password")
-    public String forgotPasswordProcess(@RequestParam("email") String email,
-                                        Model model,
-                                        RedirectAttributes redirectAttributes) {
-        model.addAttribute("pageTitle", "忘記密碼");
+    public ResponseEntity<String> forgotPasswordProcess(@RequestBody ForgotPasswordRequestDTO request) {
+        String email = request.getEmail();
+        logger.info("收到忘記密碼請求，Email: {}", email);
 
         Optional<UserModel> userOptional = userService.findByEmail(email);
         if (userOptional.isEmpty()) {
-            logger.info("忘記密碼請求：Email {} 不存在於系統中。", email);
-            model.addAttribute("successMessage", "如果此信箱已註冊，重設密碼連結將會發送到您的信箱。請檢查您的收件箱。");
-            return "forgot-password";
+            logger.info("忘記密碼請求：Email {} 不存在於系統中，但仍返回成功信息以防洩露。", email);
+            return ResponseEntity.ok("如果此信箱已註冊，重設密碼連結將會發送到您的信箱。請檢查您的收件箱。");
         }
 
         UserModel user = userOptional.get();
         try {
             String token = userService.createPasswordResetTokenForUser(user);
-            String resetLink = appBaseUrl +  "/reset-password?token=" + token;
-            mailService.sendPasswordResetEmail(user.getEmail(), user.getUserName(), resetLink);
+            String resetLink = appBaseUrl + "/reset-password?token=" + token;
+            mailService.sendPasswordResetEmail(user.getEmail(), user.getName(), resetLink); // <--- 變更點: user.getUserName() 改為 user.getName()
             logger.info("用戶 {} 的密碼重設連結已生成並發送。", user.getEmail());
-            model.addAttribute("successMessage", "重設密碼連結已發送，請檢查您的信箱。");
+            return ResponseEntity.ok("重設密碼連結已發送，請檢查您的信箱。");
         } catch (Exception e) {
             logger.error("處理忘記密碼請求失敗，Email: {}. 錯誤訊息: {}", email, e.getMessage(), e);
-            model.addAttribute("errorMessage", "發送重設連結時發生錯誤，請稍後再試。");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("發送重設連結時發生錯誤，請稍後再試。");
         }
-        return "forgot-password";
     }
+    // endregion
 
+    // region 驗證密碼重設 Token
     @Operation(
-        summary = "顯示重設密碼頁面",
-        description = "驗證重設密碼Token的有效性，並返回重設密碼的HTML表單頁面。無效Token將重定向或顯示錯誤。",
+        summary = "驗證密碼重設Token",
+        description = "驗證密碼重設Token的有效性。如果有效，返回成功狀態；如果無效，返回錯誤狀態。",
         parameters = {
             @Parameter(name = "token", description = "密碼重設Token", required = true, example = "a1b2c3d4e5f6")
         },
         responses = {
-            @ApiResponse(responseCode = "200", description = "Token有效，成功返回重設密碼頁面HTML"),
-            @ApiResponse(responseCode = "302", description = "Token無效或過期，重定向至忘記密碼頁面")
+            @ApiResponse(responseCode = "200", description = "Token有效，可以進行密碼重設"),
+            @ApiResponse(responseCode = "400", description = "Token無效或已過期")
         }
     )
-    @GetMapping("/reset-password")
-    public String showResetPasswordPage(@RequestParam("token") String token, Model model) {
-        model.addAttribute("pageTitle", "重設密碼");
-
+    @GetMapping("/reset-password/validate-token")
+    public ResponseEntity<String> validateResetPasswordToken(@RequestParam("token") String token) {
         Optional<UserModel> userOptional = userService.validatePasswordResetToken(token);
         if (userOptional.isEmpty()) {
-            logger.warn("顯示重設密碼頁面失敗：無效或已過期 Token: {}", token);
-            model.addAttribute("errorMessage", "無效或已過期的重設密碼連結。請重新申請。");
-            return "forgot-password";
+            logger.warn("驗證密碼重設Token失敗：無效或已過期 Token: {}", token);
+            return ResponseEntity.badRequest().body("無效或已過期的重設密碼連結。請重新申請。");
         }
-        logger.info("顯示重設密碼頁面成功，Token: {}", token);
-        model.addAttribute("token", token);
-        return "reset-password";
+        logger.info("驗證密碼重設Token成功，Token: {}", token);
+        return ResponseEntity.ok("Token 有效，可以重設密碼。");
     }
+    // endregion
 
+    // region 執行密碼重設
     @Operation(
-        summary = "處理重設密碼請求",
-        description = "接收重設密碼Token及新密碼，驗證後更新用戶密碼。成功後重定向到登入頁，失敗則返回重設密碼頁並顯示錯誤。",
-        requestBody = @RequestBody(
-            description = "新密碼數據",
+        summary = "執行密碼重設",
+        description = "接收重設密碼Token及新密碼，驗證後更新用戶密碼。",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "新密碼數據，JSON 格式",
             required = true,
             content = @Content(
-                mediaType = "application/x-www-form-urlencoded",
+                mediaType = "application/json",
                 schema = @Schema(implementation = ResetPasswordRequestDTO.class)
             )
         ),
         responses = {
-            @ApiResponse(responseCode = "302", description = "密碼重設成功，重定向至登入頁"),
-            @ApiResponse(responseCode = "200", description = "密碼驗證失敗，返回重設密碼頁面顯示錯誤",
-                content = @Content(schema = @Schema(implementation = String.class))),
-            @ApiResponse(responseCode = "302", description = "Token無效或過期，重定向至忘記密碼頁面")
+            @ApiResponse(responseCode = "200", description = "密碼重設成功"),
+            @ApiResponse(responseCode = "400", description = "新密碼和確認密碼不一致、密碼長度不足或Token無效/過期")
         }
     )
     @PostMapping("/reset-password")
-    public String resetPasswordProcess(@RequestParam("token") String token,
-                                       @RequestParam("newPassword") String newPassword,
-                                       @RequestParam("confirmPassword") String confirmPassword,
-                                       RedirectAttributes redirectAttributes,
-                                       Model model) {
-        model.addAttribute("pageTitle", "重設密碼");
-
-        if (!newPassword.equals(confirmPassword)) {
-            logger.warn("重設密碼失敗：Token {} 的新密碼和確認密碼不一致。", token);
-            model.addAttribute("errorMessage", "新密碼和確認密碼不一致。");
-            model.addAttribute("token", token);
-            return "reset-password";
+    public ResponseEntity<String> resetPasswordProcess(@Valid @RequestBody ResetPasswordRequestDTO request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            logger.warn("重設密碼請求數據無效。");
+            return ResponseEntity.badRequest().body("重設密碼數據無效: " + bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
 
-        if (newPassword.length() < 8) {
-            logger.warn("重設密碼失敗：Token {} 的密碼長度不足。", token);
-            model.addAttribute("errorMessage", "密碼長度至少為 8 個字符。");
-            model.addAttribute("token", token);
-            return "reset-password";
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            logger.warn("重設密碼失敗：新密碼和確認密碼不一致。");
+            return ResponseEntity.badRequest().body("新密碼和確認密碼不一致。");
         }
 
-        Optional<UserModel> userOptional = userService.validatePasswordResetToken(token);
+        if (request.getNewPassword().length() < 8) {
+            logger.warn("重設密碼失敗：密碼長度不足。");
+            return ResponseEntity.badRequest().body("密碼長度至少為 8 個字符。");
+        }
+
+        Optional<UserModel> userOptional = userService.validatePasswordResetToken(request.getToken());
         if (userOptional.isEmpty()) {
-            logger.warn("重設密碼處理失敗：無效或已過期 Token: {}", token);
-            redirectAttributes.addFlashAttribute("errorMessage", "無效或已過期的重設密碼連結。請重新申請。");
-            return "redirect:/forgot-password";
+            logger.warn("重設密碼處理失敗：無效或已過期 Token: {}", request.getToken());
+            return ResponseEntity.badRequest().body("無效或已過期的重設密碼連結。請重新申請。");
         }
 
         UserModel user = userOptional.get();
-        userService.changeUserPassword(user, newPassword);
+        userService.changeUserPassword(user, request.getNewPassword());
         logger.info("用戶 {} 的密碼已成功重設。", user.getEmail());
-        redirectAttributes.addFlashAttribute("successMessage", "您的密碼已成功重設，請使用新密碼登入。");
-        return "redirect:/login";
+        return ResponseEntity.ok("您的密碼已成功重設，請使用新密碼登入。");
     }
+    // endregion
 
+    // region 驗證帳戶
     @Operation(
-        summary = "顯示新增推薦表單頁面",
-        description = "返回用於用戶新增餐廳推薦的HTML表單頁面。",
+        summary = "驗證帳戶",
+        description = "接收驗證碼以開通用戶帳戶。返回驗證結果訊息。",
+        parameters = {
+            @Parameter(name = "code", description = "帳戶驗證碼", required = true, example = "abcdef123456")
+        },
         responses = {
-            @ApiResponse(responseCode = "200", description = "成功返回新增推薦表單HTML"),
-            @ApiResponse(responseCode = "302", description = "用戶未登入，重定向至登入頁")
+            @ApiResponse(responseCode = "200", description = "帳戶驗證成功或失敗的訊息"),
+            @ApiResponse(responseCode = "400", description = "請求數據無效或驗證碼格式錯誤")
         }
     )
-    @GetMapping("/personal-recommend/add")
-    public String showAddRecommendForm(Model model, HttpSession session) {
-        if (session.getAttribute("user") == null) {
-            return "redirect:/login";
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyAccount(@RequestParam("code") String verificationCode) {
+        logger.info("收到帳戶驗證請求，驗證碼: {}", verificationCode);
+        boolean verified = userService.verifyAccount(verificationCode);
+
+        if (verified) {
+            logger.info("帳戶驗證成功，驗證碼: {}", verificationCode);
+            return ResponseEntity.ok("您的帳戶已成功開通！");
+        } else {
+            logger.warn("帳戶驗證失敗或驗證碼無效/已過期，驗證碼: {}", verificationCode);
+            return ResponseEntity.badRequest().body("帳戶開通失敗或驗證碼無效/已過期。");
         }
-        model.addAttribute("recommendDTO", new RecommendDTO());
-        return "recommend-form";
+    }
+    // endregion
+
+    // region 會員中心
+    @Operation(
+        summary = "獲取當前用戶資料",
+        description = "需要認證。獲取當前登入用戶的詳細資料。",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "成功獲取用戶資料",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserModel.class))),
+            @ApiResponse(responseCode = "401", description = "未經認證"),
+            @ApiResponse(responseCode = "404", description = "用戶不存在")
+        }
+    )
+    @GetMapping("/profile")
+    public ResponseEntity<UserModel> getUserProfile(Principal principal) {
+        Integer currentUserId = getCurrentUserId(principal);
+        if (currentUserId == null) {
+            logger.warn("未認證用戶嘗試獲取個人資料。");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UserModel user = userService.findById(currentUserId)
+                .orElseThrow(() -> {
+                    logger.error("獲取個人資料失敗：用戶 ID {} 不存在。", currentUserId);
+                    return new RuntimeException("用戶不存在");
+                });
+        logger.info("用戶 ID {} 成功獲取個人資料。", currentUserId);
+        return ResponseEntity.ok(user);
     }
 
     @Operation(
-        summary = "處理新增推薦提交",
-        description = "接收用戶提交的餐廳推薦信息（包含店家詳情和推薦原因/評分，可選上傳圖片），驗證後保存。成功後重定向到個人推薦列表頁面。",
-        requestBody = @RequestBody(
-            description = "推薦信息和可選的店家圖片",
+        summary = "更新當前用戶資料",
+        description = "需要認證。允許用戶更新其用戶名和是否為網紅的狀態。",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "用戶更新資料，JSON 格式",
             required = true,
             content = @Content(
-                mediaType = "multipart/form-data",
-                schema = @Schema(implementation = RecommendDTO.class)
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserProfileUpdateDTO.class)
             )
         ),
         responses = {
-            @ApiResponse(responseCode = "302", description = "推薦新增成功，重定向至個人推薦列表頁"),
-            @ApiResponse(responseCode = "200", description = "表單驗證失敗，返回新增推薦表單頁面並顯示錯誤",
-                content = @Content(schema = @Schema(implementation = String.class))),
-            @ApiResponse(responseCode = "302", description = "用戶未登入或新增失敗，重定向到登入頁或新增頁面並顯示錯誤")
+            @ApiResponse(responseCode = "200", description = "用戶資料更新成功",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserModel.class))),
+            @ApiResponse(responseCode = "400", description = "請求數據無效"),
+            @ApiResponse(responseCode = "401", description = "未經認證"),
+            @ApiResponse(responseCode = "404", description = "用戶不存在")
         }
     )
-    @PostMapping("/personal-recommend/add")
-    public String addRecommendProcess(@ModelAttribute("recommendDTO") @Validated RecommendDTO recommendDTO,
-                                      BindingResult bindingResult,
-                                      HttpSession session,
-                                      RedirectAttributes redirectAttributes,
-                                      Model model) {
-        UserModel currentUser = (UserModel) session.getAttribute("user");
-        if (currentUser == null) {
-            logger.warn("未登入用戶嘗試新增推薦。");
-            return "redirect:/login";
-        }
-        logger.info("當前登入用戶 ID: {}", currentUser.getId());
-        logger.info("當前登入用戶 Email: {}", currentUser.getEmail());
-
-        if (recommendDTO.getStorePhoto() == null || recommendDTO.getStorePhoto().isEmpty()) {
-            if (recommendDTO.getStorePhotoUrl() == null || recommendDTO.getStorePhotoUrl().isEmpty()) {
-                bindingResult.rejectValue("storePhoto", "error.recommendDTO", "請上傳店家圖片！");
-            }
-        }
-
-        if (recommendDTO.getReason() == null || recommendDTO.getReason().trim().isEmpty()) {
-            bindingResult.rejectValue("reason", "error.recommendDTO", "推薦原因不能為空！");
-        }
-
-        if (recommendDTO.getScore() == null || recommendDTO.getScore() < 1 || recommendDTO.getScore() > 5) {
-            bindingResult.rejectValue("score", "error.recommendDTO", "請選擇有效的星級評分！");
+    @PutMapping("/profile")
+    public ResponseEntity<UserModel> updateProfile(@Valid @RequestBody UserProfileUpdateDTO updateDTO,
+                                                   BindingResult bindingResult,
+                                                   Principal principal) {
+        Integer currentUserId = getCurrentUserId(principal);
+        if (currentUserId == null) {
+            logger.warn("未認證用戶嘗試更新個人資料。");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         if (bindingResult.hasErrors()) {
-            logger.warn("新增推薦表單驗證失敗。");
-            model.addAttribute("recommendDTO", recommendDTO);
-            return "recommend-form";
+            logger.warn("更新個人資料表單驗證失敗。");
+            return ResponseEntity.badRequest().body(null);
         }
 
         try {
-            if (recommendDTO.getStorePhoto() != null && !recommendDTO.getStorePhoto().isEmpty()) {
-                String photoUrl = fileStorageService.uploadFile(recommendDTO.getStorePhoto());
-                recommendDTO.setStorePhotoUrl(photoUrl);
-            }
-            recommendService.addRecommend(recommendDTO, currentUser);
-            redirectAttributes.addFlashAttribute("successMessage", "推薦新增成功！");
-            logger.info("用戶 {} 新增推薦成功，導向個人推薦列表頁。", currentUser.getEmail());
-            return "redirect:/personal-recommend";
-        } catch (IllegalArgumentException | EntityNotFoundException e) {
-            logger.error("新增推薦失敗：{}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/personal-recommend/add";
+            UserModel updatedUser = userService.updateProfile(currentUserId, updateDTO);
+            logger.info("用戶 ID {} 成功更新個人資料。", currentUserId);
+            return ResponseEntity.ok(updatedUser);
+        } catch (RuntimeException e) {
+            logger.error("更新個人資料失敗：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (Exception e) {
-            logger.error("新增推薦失敗：{}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "新增推薦失敗，請重試。");
-            return "redirect:/personal-recommend/add";
+            logger.error("更新個人資料時發生未知錯誤：{}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
-
-    @Operation(
-        summary = "顯示編輯推薦表單頁面",
-        description = "根據店家ID顯示用戶編輯現有推薦的HTML表單頁面。",
-        parameters = {
-            @Parameter(name = "storeId", description = "要編輯的店家ID", required = true, example = "101")
-        },
-        responses = {
-            @ApiResponse(responseCode = "200", description = "成功返回編輯推薦表單HTML"),
-            @ApiResponse(responseCode = "302", description = "用戶未登入、找不到推薦或無權編輯，重定向到登入頁或個人推薦列表頁")
-        }
-    )
-    @GetMapping("/personal-recommend/edit/{storeId}")
-    public String showEditRecommendForm(@PathVariable("storeId") Integer storeId,
-                                        Model model,
-                                        HttpSession session,
-                                        RedirectAttributes redirectAttributes) {
-        UserModel currentUser = (UserModel) session.getAttribute("user");
-        if (currentUser == null) {
-            logger.warn("未登入用戶嘗試訪問編輯推薦頁面。");
-            return "redirect:/login";
-        }
-        try {
-            Optional<RecommendDTO> recommendDTOOptional = recommendService.getRecommendByUserAndStoreId(currentUser.getId(), storeId); // <-- 修改這裡
-            if (recommendDTOOptional.isPresent()) {
-                model.addAttribute("pageTitle", "編輯我的推薦");
-                model.addAttribute("recommendDTO", recommendDTOOptional.get());
-                return "recommend-form";
-            } else {
-                logger.warn("用戶 {} 嘗試編輯不存在或無權限的推薦，店家ID: {}", currentUser.getId(), storeId);
-                redirectAttributes.addFlashAttribute("errorMessage", "找不到該推薦或您無權編輯。");
-                return "redirect:/personal-recommend";
-            }
-        } catch (Exception e) {
-            logger.error("加載編輯表單失敗，用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUser.getId(), storeId, e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "加載編輯表單失敗：" + e.getMessage());
-            return "redirect:/personal-recommend";
-        }
-    }
-
-    @Operation(
-        summary = "處理更新推薦提交",
-        description = "接收用戶提交的更新後的餐廳推薦信息（包含店家詳情和推薦原因/評分，可選上傳圖片），驗證後更新保存。成功後重定向到個人推薦列表頁面。",
-        parameters = {
-            @Parameter(name = "storeId", description = "要更新的店家ID", required = true, example = "101", in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH)
-        },
-        requestBody = @RequestBody(
-            description = "更新後的推薦信息和可選的店家圖片",
-            required = true,
-            content = @Content(
-                mediaType = "multipart/form-data",
-                schema = @Schema(implementation = RecommendDTO.class)
-            )
-        ),
-        responses = {
-            @ApiResponse(responseCode = "302", description = "推薦更新成功，重定向至個人推薦列表頁"),
-            @ApiResponse(responseCode = "200", description = "表單驗證失敗，返回編輯推薦表單頁面並顯示錯誤",
-                content = @Content(schema = @Schema(implementation = String.class))),
-            @ApiResponse(responseCode = "302", description = "用戶未登入、找不到推薦或無權更新，重定向到登入頁或編輯頁面並顯示錯誤")
-        }
-    )
-    @PostMapping("/personal-recommend/edit/{storeId}")
-    public String updateRecommendProcess(@PathVariable("storeId") Integer pathStoreId,
-                                         @ModelAttribute("recommendDTO") @Validated RecommendDTO recommendDTO,
-                                         BindingResult bindingResult,
-                                         HttpSession session,
-                                         RedirectAttributes redirectAttributes,
-                                         Model model) {
-        UserModel currentUser = (UserModel) session.getAttribute("user");
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
-
-        if (!pathStoreId.equals(recommendDTO.getStoreId())) {
-            bindingResult.rejectValue("storeId", "error.recommendDTO", "無效的編輯請求，店家ID不匹配。");
-        }
-
-        if (bindingResult.hasErrors()) {
-            logger.warn("編輯推薦表單驗證失敗。");
-            model.addAttribute("pageTitle", "編輯我的推薦");
-            model.addAttribute("recommendDTO", recommendDTO);
-            return "recommend-form";
-        }
-
-        try {
-            if (recommendDTO.getStorePhoto() != null && !recommendDTO.getStorePhoto().isEmpty()) {
-                String photoUrl = fileStorageService.uploadFile(recommendDTO.getStorePhoto());
-                recommendDTO.setStorePhotoUrl(photoUrl);
-            }
-            recommendService.updateRecommend(recommendDTO, currentUser);
-
-            redirectAttributes.addFlashAttribute("successMessage", "推薦更新成功！");
-            return "redirect:/personal-recommend";
-        } catch (SecurityException | EntityNotFoundException e) {
-            logger.error("更新推薦失敗：{}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            model.addAttribute("pageTitle", "編輯我的推薦");
-            model.addAttribute("recommendDTO", recommendDTO);
-            return "recommend-form";
-        } catch (Exception e) {
-            logger.error("更新推薦失敗：{}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "更新推薦失敗，請重試。");
-            model.addAttribute("pageTitle", "編輯我的推薦");
-            model.addAttribute("recommendDTO", recommendDTO);
-            return "recommend-form";
-        }
-    }
-
-    @Operation(
-        summary = "處理刪除推薦請求",
-        description = "接收用戶刪除推薦的請求，根據店家ID刪除用戶的推薦。成功後重定向到個人推薦列表頁面。",
-        parameters = {
-            @Parameter(name = "storeId", description = "要刪除的店家ID", required = true, example = "101", in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH)
-        },
-        responses = {
-            @ApiResponse(responseCode = "302", description = "推薦刪除成功，重定向至個人推薦列表頁"),
-            @ApiResponse(responseCode = "302", description = "用戶未登入、找不到推薦或無權刪除，重定向到登入頁或個人推薦列表頁並顯示錯誤")
-        }
-    )
-    @PostMapping("/personal-recommend/delete/{storeId}")
-    public String deleteRecommendProcess(@PathVariable("storeId") Integer storeId,
-                                         HttpSession session,
-                                         RedirectAttributes redirectAttributes) {
-        UserModel currentUser = (UserModel) session.getAttribute("user");
-        if (currentUser == null) {
-            logger.warn("未登入用戶嘗試刪除推薦，店家ID: {}", storeId);
-            return "redirect:/login";
-        }
-
-        try {
-            recommendService.deleteRecommend(currentUser.getId(), storeId, currentUser);
-            redirectAttributes.addFlashAttribute("successMessage", "推薦已成功刪除！");
-            logger.info("用戶 ID: {} 成功刪除對店家 ID: {} 的推薦。", currentUser.getId(), storeId);
-        } catch (jakarta.persistence.EntityNotFoundException e) {
-            logger.error("刪除推薦失敗：找不到推薦或無權限。用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUser.getId(), storeId, e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        } catch (Exception e) {
-            logger.error("刪除推薦時發生未知錯誤。用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUser.getId(), storeId, e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "刪除推薦失敗，請稍後再試。");
-        }
-        return "redirect:/personal-recommend";
-    }
+    // endregion
 }

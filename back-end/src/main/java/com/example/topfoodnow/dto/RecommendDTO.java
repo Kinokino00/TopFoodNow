@@ -23,7 +23,7 @@ public class RecommendDTO {
     private Integer storeId;
 
     @Schema(description = "用戶名稱", example = "美食家小王", accessMode = Schema.AccessMode.READ_ONLY)
-    private String userName;
+    private String name;
 
     @NotNull(message = "店家名稱為必填！")
     @Schema(description = "店家名稱", example = "四木欣福")

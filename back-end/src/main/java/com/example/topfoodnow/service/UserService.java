@@ -1,10 +1,14 @@
 package com.example.topfoodnow.service;
 
 import com.example.topfoodnow.model.UserModel;
+import com.example.topfoodnow.model.RoleModel;
 import com.example.topfoodnow.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import com.example.topfoodnow.repository.RoleRepository;
+import com.example.topfoodnow.dto.UserProfileUpdateDTO;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,12 +16,14 @@ import java.util.UUID;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, MailService mailService) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, MailService mailService) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
     }
@@ -45,13 +51,19 @@ public class UserService {
      * @param user 待註冊的用戶模型
      * @return 儲存後的用戶模型
      */
+    @Transactional
     public UserModel addUser(UserModel user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         String verificationCode = UUID.randomUUID().toString();
         user.setVerificationCode(verificationCode);
         user.setEnabled(false);
+
+        RoleModel userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new RuntimeException("Default USER role not found!"));
+        user.setRole(userRole);
+        user.setIsFamous(false);
         UserModel savedUser = userRepository.save(user);
-        mailService.sendVerificationEmail(user.getEmail(), user.getUserName(), verificationCode);
+        mailService.sendVerificationEmail(user.getEmail(), user.getName(), verificationCode);
         return savedUser;
     }
 
@@ -82,6 +94,7 @@ public class UserService {
      * @param verificationCode 接收到的驗證碼
      * @return 如果成功啟用，返回 true；否則返回 false
      */
+    @Transactional
     public boolean verifyAccount(String verificationCode) {
         Optional<UserModel> userOptional = userRepository.findByVerificationCode(verificationCode);
 
@@ -102,6 +115,7 @@ public class UserService {
      * @param user 需要重設密碼的用戶
      * @return 生成的 Token 字符串
      */
+    @Transactional
     public String createPasswordResetTokenForUser(UserModel user) {
         String token = UUID.randomUUID().toString();
 
@@ -142,11 +156,32 @@ public class UserService {
      * @param user 需要更改密碼的用戶
      * @param newPassword 新密碼 (明文)
      */
+    @Transactional
     public void changeUserPassword(UserModel user, String newPassword) {
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setResetPasswordToken(null);
         user.setResetPasswordExpiryDate(null);
         userRepository.save(user);
         System.out.println("用戶 " + user.getEmail() + " 的密碼已更新。");
+    }
+
+    /**
+     * 更新用戶資料的方法
+     * @param userId 要更新的用戶ID
+     * @param updateDTO 包含新用戶名和是否為網紅狀態的 DTO
+     * @return 更新後的 UserModel
+     */
+    @Transactional
+    public UserModel updateProfile(Integer userId, UserProfileUpdateDTO updateDTO) {
+        UserModel user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用戶未找到，ID: " + userId));
+
+        if (updateDTO.getName() != null && !updateDTO.getName().trim().isEmpty()) {
+            user.setName(updateDTO.getName());
+        }
+        if (updateDTO.getIsFamous() != null) {
+            user.setIsFamous(updateDTO.getIsFamous());
+        }
+        return userRepository.save(user);
     }
 }
