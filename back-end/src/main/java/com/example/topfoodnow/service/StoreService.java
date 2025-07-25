@@ -12,8 +12,8 @@ import java.util.Optional;
 public class StoreService {
     private final StoreRepository storeRepository;
 
-    public List<StoreModel> findRandom6Stores() {
-        return storeRepository.findRandom6Stores();
+    public List<StoreModel> findRandom3Stores() {
+        return storeRepository.findRandom3Stores();
     }
 
     public List<StoreModel> findTop6ByOrderByCreatedAtDesc() {

@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import lombok.*;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.Set;
 
 @Entity
 @Table(name = "user")
@@ -20,6 +19,11 @@ public class UserModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "用戶ID", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private int id;
+
+    @ManyToOne(fetch = FetchType.EAGER) // 確保 RoleModel 實體存在並被加載
+    @JoinColumn(name = "role_id", nullable = false) // 關聯到 role 表的 ID
+    @NonNull // 如果角色是必填的
+    private RoleModel role;
 
     @Column(unique = true, nullable = false)
     @NonNull
@@ -41,14 +45,10 @@ public class UserModel {
     @Schema(description = "用戶名稱", example = "John Doe")
     private String name;
 
-    @Column(name = "is_famous", nullable = false, columnDefinition = "BIT(1) DEFAULT 0")
-    @Schema(description = "是否為網紅", example = "false")
-    private Boolean isFamous;
-
     @Column(nullable = false)
     @NonNull
     @Schema(description = "帳戶是否啟用", example = "true", accessMode = Schema.AccessMode.READ_ONLY)
-    private boolean enabled;
+    private Boolean enabled;
 
     @Column(name = "verification_code", length = 64, unique = true)
     @Schema(description = "帳戶驗證碼", accessMode = Schema.AccessMode.READ_ONLY, nullable = true)
@@ -58,14 +58,18 @@ public class UserModel {
     @Schema(description = "重設密碼Token", accessMode = Schema.AccessMode.READ_ONLY, nullable = true)
     private String resetPasswordToken;
 
+    @Column(name = "yt_url")
+    @Schema(description = "YouTube 頻道連結", example = "https://www.youtube.com/channel/yourchannel", nullable = true)
+    private String ytUrl;
+
+    @Column(name = "ig_url")
+    @Schema(description = "Instagram 個人檔案連結", example = "https://www.instagram.com/yourprofile/", nullable = true)
+    private String igUrl;
+
     @Column(name = "reset_password_expiry_date")
     @Schema(description = "重設密碼Token過期時間", example = "2025-07-15T10:00:00", accessMode = Schema.AccessMode.READ_ONLY, nullable = true)
     private LocalDateTime resetPasswordExpiryDate;
     public boolean isResetPasswordTokenExpired() {
         return this.resetPasswordExpiryDate != null && LocalDateTime.now().isAfter(this.resetPasswordExpiryDate);
     }
-
-    @ManyToOne(fetch = FetchType.EAGER) // 通常角色資訊會立即加載
-    @JoinColumn(name = "role_id", nullable = false)
-    private RoleModel role;
 }

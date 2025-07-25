@@ -1,13 +1,16 @@
 package com.example.topfoodnow.service.impl;
 
 import com.example.topfoodnow.dto.RecommendDTO;
+import com.example.topfoodnow.dto.CategoryDTO;
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.model.StoreModel;
 import com.example.topfoodnow.model.RecommendModel;
+import com.example.topfoodnow.model.CategoryModel;
 import com.example.topfoodnow.service.RecommendService;
 import com.example.topfoodnow.repository.UserRepository;
 import com.example.topfoodnow.repository.StoreRepository;
 import com.example.topfoodnow.repository.RecommendRepository;
+import com.example.topfoodnow.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -29,15 +35,17 @@ public class RecommendServiceImpl implements RecommendService {
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
     private final RecommendRepository recommendRepository;
+    private final CategoryRepository categoryRepository;
 
     // region 新增推薦
+    @Override
     @Transactional
     public void addRecommend(RecommendDTO recommendDTO, UserModel currentUserFromSession) {
         UserModel managedUser = userRepository.findById(currentUserFromSession.getId()).orElseThrow(() -> {
-            logger.error("新增推薦失敗：用戶 ID {} 不存在或會話已過期。", currentUserFromSession.getId());
-            return new EntityNotFoundException("用戶不存在或會話已過期。");
+            logger.error("新增推薦失敗：用戶 ID {} 不存在或會話已過期", currentUserFromSession.getId());
+            return new EntityNotFoundException("用戶不存在或會話已過期");
         });
-        logger.info("為用戶 ID: {} (Email: {}) 嘗試新增推薦。", managedUser.getId(), managedUser.getEmail());
+        logger.info("為用戶 ID: {} (Email: {}) 嘗試新增推薦", managedUser.getId(), managedUser.getEmail());
 
         StoreModel store = storeRepository.findByName(recommendDTO.getStoreName()).orElseGet(() -> {
             StoreModel newStore = new StoreModel();
@@ -49,69 +57,88 @@ public class RecommendServiceImpl implements RecommendService {
         });
 
         if (recommendRepository.findByUserIdAndStoreId(managedUser.getId(), store.getId()).isPresent()) {
-            logger.warn("用戶 ID: {} 已對店家 ID: {} 有推薦，避免重複新增。", managedUser.getId(), store.getId());
+            logger.warn("用戶 ID: {} 已對店家 ID: {} 有推薦，避免重複新增", managedUser.getId(), store.getId());
             throw new IllegalArgumentException("您已經推薦過這家餐廳了！");
         }
+
         RecommendModel recommend = new RecommendModel();
-        recommend.setUserId(managedUser.getId());
-        recommend.setStoreId(store.getId());
         recommend.setUser(managedUser);
         recommend.setStore(store);
         recommend.setReason(recommendDTO.getReason());
         recommend.setScore(recommendDTO.getScore());
+
+        // 處理分類
+        if (recommendDTO.getCategoryIds() != null && !recommendDTO.getCategoryIds().isEmpty()) {
+            Set<CategoryModel> categories = new HashSet<>();
+            for (Integer categoryId : recommendDTO.getCategoryIds()) {
+                CategoryModel category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                        new EntityNotFoundException("分類 ID " + categoryId + " 不存在")
+                );
+                categories.add(category);
+            }
+            recommend.setCategories(categories);
+        }
+
         recommendRepository.save(recommend);
-        logger.info("成功為用戶 ID: {} 新增推薦，店家ID: {}。", managedUser.getId(), store.getId());
+        logger.info("成功為用戶 ID: {} 新增推薦，店家ID: {}", managedUser.getId(), store.getId());
     }
     // endregion
 
-    // region 獲取用戶的所有推薦
+    // region 取得用戶的所有推薦
+    @Override
     @Transactional(readOnly = true)
     public List<RecommendDTO> getRecommendsByUserId(Integer userId) {
         UserModel managedUser = userRepository.findById(userId).orElseThrow(() -> {
-            logger.error("獲取推薦失敗：用戶 ID {} 不存在。", userId);
-            return new EntityNotFoundException("用戶不存在。");
+            logger.error("取得推薦失敗：用戶 ID {} 不存在", userId);
+            return new EntityNotFoundException("用戶不存在");
         });
-        return recommendRepository.findByUserId(managedUser.getId()).stream()
+        // 這裡需要更新 Repository 方法以避免 N+1 問題
+        return recommendRepository.findByUserWithUserAndStoreAndCategories(managedUser.getId()).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
     // endregion
 
-    // region 精確獲取用戶對店家的推薦，用於所有推薦詳情頁面
+    // region 精確取得用戶對店家的推薦，用於所有推薦詳情頁面
+    @Override
     @Transactional(readOnly = true)
     public Optional<RecommendDTO> getRecommendByUserAndStoreId(Integer userId, Integer storeId) {
         UserModel user = userRepository.findById(userId).orElseThrow(() -> {
-            logger.error("查詢推薦失敗：用戶 ID {} 不存在。", userId);
-            return new EntityNotFoundException("用戶不存在。");
+            logger.error("查詢推薦失敗：用戶 ID {} 不存在", userId);
+            return new EntityNotFoundException("用戶不存在");
         });
 
         Optional<StoreModel> storeOptional = storeRepository.findById(storeId);
         if (storeOptional.isEmpty()) {
-            logger.warn("查詢推薦失敗：店家 ID {} 不存在。", storeId);
+            logger.warn("查詢推薦失敗：店家 ID {} 不存在", storeId);
             return Optional.empty();
         }
-        Optional<RecommendModel> recommendModelOptional = recommendRepository.findByUserIdAndStoreId(user.getId(), storeId);
+        Optional<RecommendModel> recommendModelOptional = recommendRepository.findByUserAndStoreIdWithUserAndStoreAndCategories(user.getId(), storeId);
         return recommendModelOptional.map(this::convertToDto);
     }
     // endregion
 
     // region 更新推薦
+    @Override
     @Transactional
     public void updateRecommend(RecommendDTO recommendDTO, UserModel currentUserFromSession) {
         UserModel managedUser = userRepository.findById(currentUserFromSession.getId()).orElseThrow(() -> {
-            logger.error("更新推薦失敗：用戶 ID {} 不存在或會話已過期。", currentUserFromSession.getId());
-            return new EntityNotFoundException("用戶不存在或會話已過期。");
+            logger.error("更新推薦失敗：用戶 ID {} 不存在或會話已過期", currentUserFromSession.getId());
+            return new EntityNotFoundException("用戶不存在或會話已過期");
         });
-        logger.info("嘗試為用戶 ID: {} (Email: {}) 更新推薦。", managedUser.getId(), managedUser.getEmail());
+        logger.info("嘗試為用戶 ID: {} (Email: {}) 更新推薦", managedUser.getId(), managedUser.getEmail());
         StoreModel storeToUpdate = storeRepository.findById(recommendDTO.getStoreId()).orElseThrow(() -> {
             logger.error("更新推薦失敗：要更新的店家不存在，店家ID: {}.", recommendDTO.getStoreId());
             return new EntityNotFoundException("要更新的店家不存在。店家ID: " + recommendDTO.getStoreId());
         });
-        RecommendModel existingRecommend = recommendRepository.findByUserIdAndStoreId(managedUser.getId(), storeToUpdate.getId()).orElseThrow(() -> {
-            logger.error("更新推薦失敗：找不到用戶 ID {} 對店家 ID {} 的推薦或您無權編輯。", managedUser.getId(), recommendDTO.getStoreId());
+
+        // 查找現有的推薦，確保它是當前用戶的
+        RecommendModel existingRecommend = recommendRepository.findByUserAndStoreIdWithUserAndStoreAndCategories(managedUser.getId(), storeToUpdate.getId()).orElseThrow(() -> {
+            logger.error("更新推薦失敗：找不到用戶 ID {} 對店家 ID {} 的推薦或您無權編輯", managedUser.getId(), recommendDTO.getStoreId());
             return new EntityNotFoundException("找不到該推薦或您無權編輯。用戶ID: " + managedUser.getId() + ", 店家ID: " + recommendDTO.getStoreId());
         });
 
+        // 更新店家資訊
         storeToUpdate.setName(recommendDTO.getStoreName());
         storeToUpdate.setAddress(recommendDTO.getStoreAddress());
         if (recommendDTO.getStorePhotoUrl() != null && !recommendDTO.getStorePhotoUrl().isEmpty()) {
@@ -119,55 +146,63 @@ public class RecommendServiceImpl implements RecommendService {
         }
         storeRepository.save(storeToUpdate);
 
+        // 更新推薦原因和評分
         existingRecommend.setReason(recommendDTO.getReason());
         existingRecommend.setScore(recommendDTO.getScore());
 
+        // 更新分類
+        if (recommendDTO.getCategoryIds() != null) {
+            Set<CategoryModel> updatedCategories = new HashSet<>();
+            for (Integer categoryId : recommendDTO.getCategoryIds()) {
+                CategoryModel category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                        new EntityNotFoundException("分類 ID " + categoryId + " 不存在")
+                );
+                updatedCategories.add(category);
+            }
+            existingRecommend.setCategories(updatedCategories);
+        } else {
+            existingRecommend.setCategories(new HashSet<>());
+        }
+
         recommendRepository.save(existingRecommend);
-        logger.info("成功更新用戶 ID: {} 對店家 ID: {} 的推薦。", managedUser.getId(), recommendDTO.getStoreId());
+        logger.info("成功更新用戶 ID: {} 對店家 ID: {} 的推薦", managedUser.getId(), recommendDTO.getStoreId());
     }
     // endregion
 
     // region 刪除推薦
+    @Override
     @Transactional
     public void deleteRecommend(Integer userId, Integer storeId, UserModel currentUserFromSession) {
         UserModel managedUser = userRepository.findById(currentUserFromSession.getId()).orElseThrow(() -> {
-            logger.error("刪除推薦失敗：用戶 ID {} 不存在或會話已過期。", currentUserFromSession.getId());
-            return new EntityNotFoundException("用戶不存在或會話已過期。");
+            logger.error("刪除推薦失敗：用戶 ID {} 不存在或會話已過期", currentUserFromSession.getId());
+            return new EntityNotFoundException("用戶不存在或會話已過期");
         });
 
-        RecommendModel recommendToDelete = recommendRepository.findByUserIdAndStoreId(managedUser.getId(), storeId).orElseThrow(() -> {
-            logger.error("刪除推薦失敗：找不到用戶 ID {} 對店家 ID {} 的推薦或您無權刪除。", managedUser.getId(), storeId);
-            return new EntityNotFoundException("找不到該推薦或您無權刪除。");
+        RecommendModel recommendToDelete = recommendRepository.findByUserAndStoreIdWithUserAndStoreAndCategories(managedUser.getId(), storeId).orElseThrow(() -> {
+            logger.error("刪除推薦失敗：找不到用戶 ID {} 對店家 ID {} 的推薦或您無權刪除", managedUser.getId(), storeId);
+            return new EntityNotFoundException("找不到該推薦或您無權刪除");
         });
 
         recommendRepository.delete(recommendToDelete);
-        logger.info("用戶 ID: {} 刪除了對店家 ID: {} 的推薦。", managedUser.getId(), storeId);
-    }
-    // endregion
-
-    // region 網紅最新推薦
-    @Transactional(readOnly = true)
-    public List<RecommendDTO> findLatestFamousUserRecommends(int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
-        return recommendRepository.findLatestFamousUserRecommends(pageable)
-                .stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        logger.info("用戶 ID: {} 刪除了對店家 ID: {} 的推薦", managedUser.getId(), storeId);
     }
     // endregion
 
     // region 所有推薦
-    public Page<RecommendDTO> findAllRecommendsPaged(int page, int size, Boolean isFamousFilter, String searchTerm) {
+    @Override
+    public Page<RecommendDTO> findAllRecommendsPaged(int page, int size, String searchTerm) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<RecommendModel> recommendModelPage = recommendRepository.findFilteredRecommends(isFamousFilter,searchTerm,pageable);
+        // 更新 Repository 方法以避免 N+1 問題
+        Page<RecommendModel> recommendModelPage = recommendRepository.findFilteredRecommendsWithUserAndStoreAndCategories(searchTerm, pageable);
         return recommendModelPage.map(this::convertToDto);
     }
     // endregion
 
-    // region 取隨機六筆推薦
+    // region 取隨機 3 筆推薦
+    @Override
     @Transactional(readOnly = true)
-    public List<RecommendDTO> findRandom6Recommends() {
-        return recommendRepository.findRandom6Recommends().stream()
+    public List<RecommendDTO> findRandom3Recommends() {
+        return recommendRepository.findRandom3RecommendsWithUserAndStoreAndCategories().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -177,16 +212,16 @@ public class RecommendServiceImpl implements RecommendService {
     private RecommendDTO convertToDto(RecommendModel recommendModel) {
         RecommendDTO dto = new RecommendDTO();
 
+        // 用戶資訊轉換
         if (recommendModel.getUser() != null) {
             dto.setUserId(recommendModel.getUser().getId());
             dto.setName(recommendModel.getUser().getName());
-            dto.setFamous(recommendModel.getUser().getIsFamous());
         } else {
             dto.setUserId(null);
             dto.setName("未知用戶");
-            dto.setFamous(false);
         }
 
+        // 店家資訊轉換
         if (recommendModel.getStore() != null) {
             dto.setStoreId(recommendModel.getStore().getId());
             dto.setStoreName(recommendModel.getStore().getName());
@@ -198,6 +233,20 @@ public class RecommendServiceImpl implements RecommendService {
             dto.setStoreAddress("未知地址");
             dto.setStorePhotoUrl("/images/default-image.jpg");
         }
+
+        // 取得並排序該店家最受歡迎的分類
+        if (recommendModel.getStore() != null && recommendModel.getStore().getId() != null) {
+            List<CategoryDTO> sortedCategories = recommendRepository.findCategoriesByStorePopularity(recommendModel.getStore().getId());
+            dto.setCategories(new HashSet<>(sortedCategories));
+            List<Integer> sortedCategoryIds = sortedCategories.stream()
+                    .map(CategoryDTO::getId)
+                    .collect(Collectors.toList());
+            dto.setCategoryIds(sortedCategoryIds);
+        } else {
+            dto.setCategories(new HashSet<>());
+            dto.setCategoryIds(new java.util.ArrayList<>());
+        }
+
         dto.setReason(recommendModel.getReason());
         dto.setScore(recommendModel.getScore());
         dto.setCreatedAt(recommendModel.getCreatedAt());

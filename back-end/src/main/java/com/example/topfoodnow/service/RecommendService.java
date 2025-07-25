@@ -12,7 +12,6 @@ public interface RecommendService {
     Optional<RecommendDTO> getRecommendByUserAndStoreId(Integer userId, Integer storeId);
     void updateRecommend(RecommendDTO recommendDTO, UserModel currentUserFromSession);
     void deleteRecommend(Integer userId, Integer storeId, UserModel currentUserFromSession);
-    List<RecommendDTO> findLatestFamousUserRecommends(int limit);
-    Page<RecommendDTO> findAllRecommendsPaged(int page, int size, Boolean isFamousFilter, String searchTerm);
-    List<RecommendDTO> findRandom6Recommends();
+    Page<RecommendDTO> findAllRecommendsPaged(int page, int size, String searchTerm);
+    List<RecommendDTO> findRandom3Recommends();
 }

@@ -30,12 +30,12 @@ public class LogController {
 
     @Operation(
         summary = "查看應用程式日誌",
-        description = "只有具有 'ADMIN' 角色的用戶才能訪問。返回應用程式的日誌內容。",
+        description = "只有具有 'ADMIN' 角色的用戶才能訪問。返回應用程式的日誌內容",
         parameters = {
-            @Parameter(name = "lines", description = "要讀取的日誌行數（負數或0表示全部，預設為100行）。", example = "50")
+            @Parameter(name = "lines", description = "要讀取的日誌行數（負數或0表示全部，預設為100行）", example = "50")
         },
         responses = {
-            @ApiResponse(responseCode = "200", description = "成功獲取日誌內容"),
+            @ApiResponse(responseCode = "200", description = "成功取得日誌內容"),
             @ApiResponse(responseCode = "401", description = "未經認證"),
             @ApiResponse(responseCode = "403", description = "無權限訪問 (需要 ADMIN 角色)"),
             @ApiResponse(responseCode = "500", description = "讀取日誌檔案失敗")

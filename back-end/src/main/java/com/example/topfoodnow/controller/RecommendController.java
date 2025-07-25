@@ -48,9 +48,9 @@ public class RecommendController {
     private FileStorageService fileStorageService;
 
     /**
-     * 獲取當前用戶 ID
+     * 取得當前用戶 ID
      * @Parm 當前用戶
-     * @return 成功則獲取當前用戶 ID (Integer)；否則返回 null，表示用戶未登入或系統中不存在與 Principal 關聯的用戶
+     * @return 成功則取得當前用戶 ID (Integer)；否則返回 null，表示用戶未登入或系統中不存在與 Principal 關聯的用戶
      * */
     private Integer getCurrentUserId(Principal principal) {
         if (principal == null) {
@@ -63,47 +63,34 @@ public class RecommendController {
             logger.debug("getCurrentUserId: Found UserModel for email {}, ID: {}", principalName, userOptional.get().getId());
             return userOptional.get().getId();
         } else {
-            logger.warn("getCurrentUserId: UserService 找不到對應於郵箱 {} 的用戶。這可能表示數據不一致。", principalName);
+            logger.warn("getCurrentUserId: UserService 找不到對應於郵箱 {} 的用戶。這可能表示數據不一致", principalName);
             return null;
         }
     }
 
     // region 首頁
-    @Operation(summary = "隨機餐廳推薦", description = "無需認證。返回6個隨機的餐廳推薦，用於首頁展示。")
+    @Operation(summary = "隨機餐廳推薦", description = "無需認證。返回3個隨機的餐廳推薦，用於首頁展示")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "成功獲取隨機推薦列表")
+        @ApiResponse(responseCode = "200", description = "成功取得隨機推薦列表")
     })
     @GetMapping("/random")
     public ResponseEntity<List<RecommendDTO>> getRandomRecommends() {
-        logger.info("請求獲取隨機6個餐廳推薦。");
-        List<RecommendDTO> randomRecommends = recommendService.findRandom6Recommends();
+        logger.info("請求取得隨機3個餐廳推薦");
+        List<RecommendDTO> randomRecommends = recommendService.findRandom3Recommends();
         return ResponseEntity.ok(randomRecommends);
-    }
-
-    @Operation(summary = "最新網紅推薦", description = "無需認證。返回指定數量 (預設6個) 的最新網紅推薦，用於首頁展示。")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "成功獲取最新網紅推薦列表")
-    })
-    @GetMapping("/famous")
-    public ResponseEntity<List<RecommendDTO>> getFamousUserLatestRecommends(
-            @Parameter(description = "要獲取的推薦數量，預設為6", example = "6")
-            @RequestParam(defaultValue = "6") int limit) {
-        logger.info("請求獲取最新 {} 個網紅推薦。", limit);
-        List<RecommendDTO> famousUserRecommends = recommendService.findLatestFamousUserRecommends(limit);
-        return ResponseEntity.ok(famousUserRecommends);
     }
     // endregion
 
     // region 所有餐廳推薦
      @Operation(summary = "所有餐廳推薦")
-     @ApiResponse(responseCode = "200", description = "成功獲取分頁推薦列表")
+     @ApiResponse(responseCode = "200", description = "成功取得分頁推薦列表")
      @GetMapping("/all")
      public ResponseEntity<CustomPageResponseDTO<RecommendDTO>> getAllRecommends(
              @RequestParam(defaultValue = "1") int page,
              @RequestParam(defaultValue = "10") int size,
              @RequestParam(defaultValue = "id,asc") String[] sort
      ) {
-         logger.info("請求獲取所有餐廳推薦，頁碼: {}, 大小: {}, 排序: {}", page, size, sort);
+         logger.info("請求取得所有餐廳推薦，頁碼: {}, 大小: {}, 排序: {}", page, size, sort);
 
          // 步驟 1: 將前端的 1-based 頁碼轉換為 Spring Data JPA 的 0-based 頁碼
          int springPage = page - 1;
@@ -129,10 +116,8 @@ public class RecommendController {
          // 創建 Spring Data JPA 的 Pageable 物件
          Pageable pageable = PageRequest.of(springPage, size, springSort);
 
-         // 呼叫 Service 層獲取分頁數據
-         Page<RecommendDTO> recommendPage = recommendService.findAllRecommendsPaged(
-             springPage, size, null, null
-         );
+         // 呼叫 Service 層取得分頁數據
+         Page<RecommendDTO> recommendPage = recommendService.findAllRecommendsPaged(springPage, size, null);
 
          // 步驟 2: 將 Spring Data JPA 的 Page 轉換為您的 CustomPageResponse 格式
          CustomPageResponseDTO<RecommendDTO> response = new CustomPageResponseDTO<>();
@@ -152,9 +137,9 @@ public class RecommendController {
     // endregion
 
     // region 指定用戶的所有個人推薦
-    @Operation(summary = "指定用戶的所有個人推薦", description = "無需認證。返回指定用戶的所有餐廳推薦列表。")
+    @Operation(summary = "指定用戶的所有個人推薦", description = "無需認證。返回指定用戶的所有餐廳推薦列表")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "成功獲取指定用戶的推薦列表"),
+        @ApiResponse(responseCode = "200", description = "成功取得指定用戶的推薦列表"),
         @ApiResponse(responseCode = "404", description = "未找到指定用戶")
     })
     @GetMapping("/user/{userId}")
@@ -162,20 +147,20 @@ public class RecommendController {
             @Parameter(description = "用戶 ID", required = true, example = "1", in = ParameterIn.PATH)
             @PathVariable Integer userId) {
         if (!userService.findById(userId).isPresent()) {
-            logger.warn("嘗試獲取推薦：用戶 ID: {} 不存在。", userId);
+            logger.warn("嘗試取得推薦：用戶 ID: {} 不存在", userId);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         List<RecommendDTO> recommends = recommendService.getRecommendsByUserId(userId);
-        logger.info("成功獲取用戶 ID: {} 的所有推薦列表。", userId);
+        logger.info("成功取得用戶 ID: {} 的所有推薦列表", userId);
         return ResponseEntity.ok(recommends);
     }
     // endregion
 
     // region 指定用戶對特定店家的推薦詳情
-    @Operation(summary = "指定用戶對特定店家的推薦詳情", description = "無需認證。返回指定用戶對指定店家的推薦詳細資訊。可用於公開分享。")
+    @Operation(summary = "指定用戶對特定店家的推薦詳情", description = "無需認證。返回指定用戶對指定店家的推薦詳細資訊。可用於公開分享")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "成功獲取推薦詳情"),
+        @ApiResponse(responseCode = "200", description = "成功取得推薦詳情"),
         @ApiResponse(responseCode = "404", description = "未找到該推薦")
     })
     @GetMapping("/{userId}/{storeId}") // GET /api/recommends/{userId}/{storeId}
@@ -184,14 +169,14 @@ public class RecommendController {
             @PathVariable Integer userId,
             @Parameter(description = "店家 ID", required = true, example = "1", in = ParameterIn.PATH)
             @PathVariable Integer storeId) {
-        logger.info("嘗試查看指定用戶 ID: {} 對店家 ID: {} 的推薦詳情。", userId, storeId);
+        logger.info("嘗試查看指定用戶 ID: {} 對店家 ID: {} 的推薦詳情", userId, storeId);
 
         Optional<RecommendDTO> recommendOptional = recommendService.getRecommendByUserAndStoreId(userId, storeId);
         if (recommendOptional.isPresent()) {
-            logger.info("找到推薦，返回詳情。");
+            logger.info("找到推薦，返回詳情");
             return ResponseEntity.ok(recommendOptional.get());
         } else {
-            logger.warn("未找到用戶 ID: {} 對店家 ID: {} 的推薦，返回 404。", userId, storeId);
+            logger.warn("未找到用戶 ID: {} 對店家 ID: {} 的推薦，返回 404", userId, storeId);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
@@ -200,7 +185,7 @@ public class RecommendController {
     // region 新增餐廳推薦
     @Operation(
         summary = "新增餐廳推薦",
-        description = "需認證。接收當前認證用戶提交的餐廳推薦信息（包含店家詳情和推薦原因/評分，可選上傳圖片）。",
+        description = "需認證。接收當前認證用戶提交的餐廳推薦信息（包含店家詳情和推薦原因/評分，可選上傳圖片）",
         requestBody = @RequestBody(
             description = "推薦信息和可選的店家圖片",
             required = true,
@@ -223,7 +208,7 @@ public class RecommendController {
             Principal principal) {
         Integer currentUserId = getCurrentUserId(principal);
         if (currentUserId == null) {
-            logger.warn("未認證用戶嘗試新增推薦。");
+            logger.warn("未認證用戶嘗試新增推薦");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -242,7 +227,7 @@ public class RecommendController {
 
 
         if (bindingResult.hasErrors()) {
-            logger.warn("新增推薦表單驗證失敗。");
+            logger.warn("新增推薦表單驗證失敗");
             return ResponseEntity.badRequest().body(recommendDTO);
         }
 
@@ -252,9 +237,9 @@ public class RecommendController {
                 recommendDTO.setStorePhotoUrl(photoUrl);
             }
             UserModel currentUserModel = userService.findById(currentUserId)
-                    .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到。"));
+                    .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到"));
             recommendService.addRecommend(recommendDTO, currentUserModel);
-            logger.info("用戶 {} 新增推薦成功。", currentUserModel.getEmail());
+            logger.info("用戶 {} 新增推薦成功", currentUserModel.getEmail());
             return ResponseEntity.status(HttpStatus.CREATED).body(recommendDTO);
         } catch (IllegalArgumentException | EntityNotFoundException e) {
             logger.error("新增推薦失敗：{}", e.getMessage(), e);
@@ -269,12 +254,12 @@ public class RecommendController {
     // region 更新指定推薦
     @Operation(
         summary = "更新指定推薦",
-        description = "需認證。更新當前登入用戶對指定店家的推薦。",
+        description = "需認證。更新當前登入用戶對指定店家的推薦",
         parameters = {
             @Parameter(name = "storeId", description = "要更新的店家ID", required = true, example = "101", in = ParameterIn.PATH)
         },
         requestBody = @RequestBody(
-            description = "更新後的推薦信息和可選的店家圖片。圖片通過 multipart/form-data 提交。",
+            description = "更新後的推薦信息和可選的店家圖片。圖片通過 multipart/form-data 提交",
             required = true,
             content = @Content(
                 mediaType = "multipart/form-data",
@@ -301,7 +286,7 @@ public class RecommendController {
         }
 
         if (!pathStoreId.equals(recommendDTO.getStoreId())) {
-            bindingResult.rejectValue("storeId", "error.recommendDTO", "無效的編輯請求，店家ID不匹配。");
+            bindingResult.rejectValue("storeId", "error.recommendDTO", "無效的編輯請求，店家ID不匹配");
         }
 
         // 手動驗證
@@ -313,7 +298,7 @@ public class RecommendController {
         }
 
         if (bindingResult.hasErrors()) {
-            logger.warn("編輯推薦表單驗證失敗。");
+            logger.warn("編輯推薦表單驗證失敗");
             return ResponseEntity.badRequest().body(recommendDTO);
         }
 
@@ -323,9 +308,9 @@ public class RecommendController {
                 recommendDTO.setStorePhotoUrl(photoUrl);
             }
             UserModel currentUserModel = userService.findById(currentUserId)
-                    .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到。"));
+                    .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到"));
             recommendService.updateRecommend(recommendDTO, currentUserModel);
-            logger.info("用戶 {} 更新推薦成功，店家ID: {}。", currentUserModel.getEmail(), recommendDTO.getStoreId());
+            logger.info("用戶 {} 更新推薦成功，店家ID: {}", currentUserModel.getEmail(), recommendDTO.getStoreId());
             return ResponseEntity.ok(recommendDTO);
         } catch (SecurityException | EntityNotFoundException e) {
             logger.error("更新推薦失敗：{}", e.getMessage(), e);
@@ -340,7 +325,7 @@ public class RecommendController {
     // region 刪除指定推薦
     @Operation(
         summary = "刪除指定推薦",
-        description = "需認證。刪除當前登入用戶對指定店家的推薦。",
+        description = "需認證。刪除當前登入用戶對指定店家的推薦",
         parameters = {
             @Parameter(name = "storeId", description = "要刪除的店家ID", required = true, example = "101", in = ParameterIn.PATH)
         },
@@ -363,9 +348,9 @@ public class RecommendController {
 
         try {
             UserModel currentUserModel = userService.findById(currentUserId)
-                    .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到。"));
+                    .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到"));
             recommendService.deleteRecommend(currentUserId, storeId, currentUserModel);
-            logger.info("用戶 ID: {} 成功刪除對店家 ID: {} 的推薦。", currentUserId, storeId);
+            logger.info("用戶 ID: {} 成功刪除對店家 ID: {} 的推薦", currentUserId, storeId);
             return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException e) {
             logger.error("刪除推薦失敗：找不到推薦或無權限。用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUserId, storeId, e.getMessage());

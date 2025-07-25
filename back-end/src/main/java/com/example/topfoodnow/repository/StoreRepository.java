@@ -9,8 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface StoreRepository extends JpaRepository<StoreModel, Integer> {
-    @Query(value = "SELECT * FROM store ORDER BY RAND() LIMIT 6", nativeQuery = true)
-    List<StoreModel> findRandom6Stores();
+    @Query(value = "SELECT * FROM store ORDER BY RAND() LIMIT 3", nativeQuery = true)
+    List<StoreModel> findRandom3Stores();
 
     List<StoreModel> findTop6ByOrderByCreatedAtDesc();
 
