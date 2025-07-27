@@ -3,7 +3,7 @@ package com.example.topfoodnow.service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
-public interface FileStorageService {
+public interface GcsService {
     String uploadFile(MultipartFile file, String folderPath) throws IOException;
     void deleteFile(String fileUrl);
 }

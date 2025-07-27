@@ -1,7 +1,7 @@
 package com.example.topfoodnow.repository;
 
 import com.example.topfoodnow.model.StoreCategoryModel;
-import com.example.topfoodnow.model.StoreCategoryId; // 複合主鍵
+import com.example.topfoodnow.model.StoreCategoryId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,11 +20,10 @@ public interface StoreCategoryRepository extends JpaRepository<StoreCategoryMode
     // 檢查特定關聯是否存在
     boolean existsById_StoreIdAndId_CategoryId(Integer storeId, Integer categoryId);
 
-    // 為了更新或刪除單個精確的關聯
+    // 更新或刪除單個精確的關聯
     Optional<StoreCategoryModel> findById_StoreIdAndId_CategoryId(Integer storeId, Integer categoryId);
 
-    // 自定義查詢來取得所有分類，以便在服務層進行排序和組合
-    // 這裡的查詢只取得直接關聯，不包含來自 recommened 的間接關聯
+    // 取得所有分類以便在服務層進行排序和組合。只取得直接關聯，不包含來自 recommened 的間接關聯
     @Query("SELECT sc FROM StoreCategoryModel sc JOIN FETCH sc.category JOIN FETCH sc.store WHERE sc.id.storeId = :storeId")
     List<StoreCategoryModel> findStoreCategoriesByStoreIdWithDetails(@Param("storeId") Integer storeId);
 

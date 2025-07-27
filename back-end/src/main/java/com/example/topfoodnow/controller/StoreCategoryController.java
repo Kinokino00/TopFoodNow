@@ -1,40 +1,36 @@
 package com.example.topfoodnow.controller;
 
+import com.example.topfoodnow.dto.StoreCategoryDTO;
+import com.example.topfoodnow.dto.StoreCategoryRequestDTO;
+import com.example.topfoodnow.dto.StoreCategoryResponseDTO;
 import com.example.topfoodnow.service.StoreCategoryService;
-import com.example.topfoodnow.dto.StoreCategoryDTO; // 用於單一關聯的 DTO
-import com.example.topfoodnow.dto.StoreCategoryRequestDTO; // 新增：用於 POST 請求的 DTO
-import com.example.topfoodnow.dto.StoreCategoryResponseDTO; // 新增：用於 GET 響應的 DTO
-import com.example.topfoodnow.model.UserModel; // 新增：用於獲取用戶信息
-import com.example.topfoodnow.service.UserService; // 新增：用於獲取用戶服務
-
+import com.example.topfoodnow.model.UserModel;
+import com.example.topfoodnow.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.responses.ApiResponse; // 新增：用於 API 響應註解
-import io.swagger.v3.oas.annotations.responses.ApiResponses; // 新增：用於 API 響應註解
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement; // 新增：用於 JWT 認證標識
-
-import jakarta.validation.Valid; // 新增：用於 DTO 驗證
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize; // 新增：用於方法級別權限控制
-import org.slf4j.Logger; // 新增：用於日誌
-import org.slf4j.LoggerFactory; // 新增：用於日誌
-
-import java.security.Principal; // 新增：用於獲取當前用戶
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.security.Principal;
 import java.util.List;
-// import java.util.Map; // 移除：不再使用 Map 作為請求體
 
 @RestController
 @RequestMapping("/api/store-categories")
 @Tag(name = "店家與分類管理", description = "店家與分類關係的 API")
 public class StoreCategoryController {
-    private static final Logger logger = LoggerFactory.getLogger(StoreCategoryController.class); // 新增日誌
+    private static final Logger logger = LoggerFactory.getLogger(StoreCategoryController.class);
 
     private final StoreCategoryService storeCategoryService;
-    private final UserService userService; // 新增：注入 UserService
+    private final UserService userService;
 
     public StoreCategoryController(StoreCategoryService storeCategoryService, UserService userService) {
         this.storeCategoryService = storeCategoryService;
@@ -128,24 +124,21 @@ public class StoreCategoryController {
             @ApiResponse(responseCode = "401", description = "未經認證"),
             @ApiResponse(responseCode = "403", description = "無權限 (非管理員)")
     })
-    @SecurityRequirement(name = "bearerAuth") // 指示此 API 需要 JWT 認證
-    @PreAuthorize("hasRole('ADMIN')") // 只有 ADMIN 角色才能調用此方法
+    @SecurityRequirement(name = "bearerAuth") // 此 API 需要 JWT 認證
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<StoreCategoryResponseDTO> addOrUpdateCategoriesToStore(
             @Valid @RequestBody StoreCategoryRequestDTO request,
-            Principal principal) { // 接收 Principal 以判斷是否為 ADMIN
+            Principal principal) {
         logger.info("管理員嘗試為店家 ID: {} 添加或更新分類。", request.getStoreId());
         try {
-            // isAdmin 方法已經判斷了角色，但 @PreAuthorize 已經確保了 ADMIN 權限
-            // 這裡可以再次確認，或者信任 @PreAuthorize
-            boolean isAdminRequest = isAdmin(principal); // 判斷是否為管理員發起的請求
-
+            boolean isAdminRequest = isAdmin(principal);
             StoreCategoryResponseDTO updatedStoreCategories = storeCategoryService.addOrUpdateStoreCategories(
                     request.getStoreId(),
                     request.getCategoryIds(),
                     isAdminRequest
             );
-            return ResponseEntity.ok(updatedStoreCategories); // 返回更新後的店家分類列表
+            return ResponseEntity.ok(updatedStoreCategories);
         } catch (jakarta.persistence.EntityNotFoundException e) {
             logger.warn("添加分類失敗：店家或分類不存在。錯誤: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
@@ -166,8 +159,8 @@ public class StoreCategoryController {
             @ApiResponse(responseCode = "403", description = "無權限 (非管理員)"),
             @ApiResponse(responseCode = "404", description = "未找到該關聯")
     })
-    @SecurityRequirement(name = "bearerAuth") // 指示此 API 需要 JWT 認證
-    @PreAuthorize("hasRole('ADMIN')") // 只有 ADMIN 角色才能調用此方法
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping
     public ResponseEntity<Void> removeCategoryFromStore(
             @RequestParam @Schema(description = "店家ID", example = "1") Integer storeId,

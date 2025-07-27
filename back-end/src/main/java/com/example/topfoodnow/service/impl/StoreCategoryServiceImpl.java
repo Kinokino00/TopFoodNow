@@ -1,9 +1,7 @@
-// src/main/java/com/example/topfoodnow/service/impl/StoreCategoryServiceImpl.java
 package com.example.topfoodnow.service.impl;
 
 import com.example.topfoodnow.model.StoreModel;
 import com.example.topfoodnow.model.CategoryModel;
-import com.example.topfoodnow.model.StoreCategoryId;
 import com.example.topfoodnow.model.StoreCategoryModel;
 import com.example.topfoodnow.dto.CategoryDTO;
 import com.example.topfoodnow.dto.StoreCategoryResponseDTO;
@@ -18,9 +16,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -133,14 +129,12 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
                 .collect(Collectors.collectingAndThen(
                         Collectors.toList(),
                         list -> {
-                            list.sort(Comparator.comparing(CategoryDTO::getId)); // 如果多個管理員添加，按ID排序
+                            list.sort(Comparator.comparing(CategoryDTO::getId));
                             return list;
                         }
                 )).forEach(sortedCategories::add);
 
         // 2. 獲取用戶推薦次數最高的分類 (來自 recommend 相關表)
-        // 這裡的邏輯需要您根據實際的 recommend 和 recommend_category 表結構來實現
-        // 假設您在 StoreCategoryRepository 中有一個 findCategoriesByRecommendationCountForStore 方法
         List<Object[]> recommendedCategoryData = storeCategoryRepository.findCategoriesByRecommendationCountForStore(storeId);
 
         // 將推薦的分類（非管理員添加的且未重複的）添加到列表中
@@ -152,18 +146,16 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
                     CategoryModel categoryModel = categoryRepository.findById(categoryId).orElse(null);
                     return categoryModel != null ? convertToCategoryDTO(categoryModel) : null;
                 })
-                .filter(dto -> dto != null && !sortedCategories.contains(dto)) // 排除已存在的管理員添加分類
+                .filter(dto -> dto != null && !sortedCategories.contains(dto))
                 .collect(Collectors.collectingAndThen(
                         Collectors.toList(),
                         list -> {
-                            // 這裡可以根據推薦次數再次排序，因為 native query 已經排過序了，但如果需要進一步處理
-                            // 例如：list.sort(Comparator.comparingInt(CategoryDTO::getUserRecommendationCount).reversed());
                             return list;
                         }
                 )).forEach(sortedCategories::add);
 
 
-        // 最後添加所有剩餘的非管理員直接關聯的分類 (如果還未被包含)
+        // 最後添加所有剩餘的非管理員直接關聯的分類
         directAssociations.stream()
                 .filter(sc -> !sc.getIsAdminAdded()) // 只考慮非管理員添加的
                 .map(sc -> convertToCategoryDTO(sc.getCategory()))
@@ -179,7 +171,7 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
 
         StoreCategoryResponseDTO responseDTO = new StoreCategoryResponseDTO();
         responseDTO.setStoreId(store.getId());
-        responseDTO.setStoreName(store.getName()); // 假設 StoreModel 有 getName() 方法
+        responseDTO.setStoreName(store.getName());
         responseDTO.setCategories(new ArrayList<>(sortedCategories));
 
         return responseDTO;
@@ -187,13 +179,11 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
 
     @Override
     public List<StoreCategoryDTO> getStoresByCategoryId(Integer categoryId) {
-        // 這裡的邏輯可以保持不變，因為它返回的是 StoreCategoryDTO，而不是排序後的 CategoryDTO 列表
         return storeCategoryRepository.findById_CategoryId(categoryId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
-    // 將 StoreCategoryModel 轉換為 StoreCategoryDTO
     private StoreCategoryDTO convertToDto(StoreCategoryModel model) {
         StoreCategoryDTO dto = new StoreCategoryDTO();
         dto.setStoreId(model.getId().getStoreId());

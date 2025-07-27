@@ -1,20 +1,19 @@
 package com.example.topfoodnow.service.impl;
 
-import com.example.topfoodnow.controller.CategoryController;
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.model.RoleModel;
 import com.example.topfoodnow.service.UserService;
 import com.example.topfoodnow.service.MailService;
-import com.example.topfoodnow.repository.UserRepository;
+import com.example.topfoodnow.controller.CategoryController;
 import com.example.topfoodnow.repository.RoleRepository;
+import com.example.topfoodnow.repository.UserRepository;
 import com.example.topfoodnow.dto.UserProfileUpdateDTO;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.Optional;

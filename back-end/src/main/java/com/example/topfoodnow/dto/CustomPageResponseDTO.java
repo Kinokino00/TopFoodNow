@@ -1,19 +1,34 @@
 package com.example.topfoodnow.dto;
 
-import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import java.util.List;
 
 @Data
+@Schema(description = "自定義分頁響應 DTO")
 public class CustomPageResponseDTO<T> {
-    private List<T> content;
+    @Schema(description = "分頁內容數據列表")
+    private List<T> data;
+
+    @Schema(description = "分頁信息")
     private CustomPageableInfo pageable;
+
+    @Schema(description = "總元素數量")
     private long totalElements;
+
+    @Schema(description = "總頁數")
     private int totalPages;
 
     @Data
+    @Schema(description = "分頁")
     public static class CustomPageableInfo {
+        @Schema(description = "當前頁碼")
         private int pageNumber;
+
+        @Schema(description = "每頁大小")
         private int pageSize;
-        private String sort;
+
+        @Schema(description = "排序")
+        private String sort; // 例如: "id: ASC", "name: DESC"
     }
 }

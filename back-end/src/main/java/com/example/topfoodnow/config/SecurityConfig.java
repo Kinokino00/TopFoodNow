@@ -9,7 +9,6 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -21,10 +20,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 import java.util.Arrays;
 import java.util.Optional;
@@ -34,9 +35,12 @@ import java.util.Optional;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     private final UserRepository userRepository;
+    private final CorsConfigurationSource corsConfigurationSource;
 
-    public SecurityConfig(UserRepository userRepository) {
+    // 修改建構子，接收 CorsConfigurationSource
+    public SecurityConfig(UserRepository userRepository, CorsConfigurationSource corsConfigurationSource) {
         this.userRepository = userRepository;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
@@ -56,9 +60,9 @@ public class SecurityConfig {
                     user.getEmail(),
                     user.getPassword(),
                     user.getEnabled(),
-                    true, // 帳戶是否未過期
+                    true,   // 帳戶是否未過期
                     true, // 憑證是否未過期
-                    true, // 帳戶是否未鎖定
+                    true,   // 帳戶是否未鎖定
                     Arrays.asList(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName().toUpperCase()))
             );
         };
@@ -72,23 +76,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtRequestFilter jwtRequestFilter) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(authorize -> authorize
-                        // 允許 Swagger UI 相關的公共訪問
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/**").permitAll()
-                        // 允許身份驗證相關的 API (註冊、登入、忘記密碼等)
-                        .requestMatchers("/api/auth/**").permitAll()
-                        // 允許推薦相關的公開查詢
-                        .requestMatchers("/api/recommend/random", "/api/recommend/all", "/api/recommend/{userId}/{storeId}").permitAll()
-
-                        // **** 新增針對 /api/categories 的權限規則 ****
-                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll() // 允許所有用戶查詢分類
-                        .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN") // 創建分類需要 ADMIN 角色
-                        .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")  // 更新分類需要 ADMIN 角色
-                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN") // 刪除分類需要 ADMIN 角色
-                        // **** 結束新增 ****
-
-                        // 其他所有未明確指定權限的請求都需要認證
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/store/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/recommend/user/{userId}", "/api/recommend/{userId}/{storeId}", "/api/recommend/all").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 // 配置會話管理為無狀態 (適用於 JWT)
@@ -106,19 +102,21 @@ public class SecurityConfig {
         // 確保允許的源與您的前端應用保持一致
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:8080"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*")); // 允許所有頭部，包括 Authorization
-        configuration.setAllowCredentials(true); // 允許發送憑證 (例如 Cookies, Authorization Headers)
-        configuration.setMaxAge(3600L); // 預檢請求的緩存時間
+        // 允許所有頭部，包括 Authorization
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        // 允許發送憑證 (例如 Cookies, Authorization Headers)
+        configuration.setAllowCredentials(true);
+        // 預檢請求的緩存時間
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // 應用於所有路徑
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
+        return new OpenAPI().addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
                                 .name("bearerAuth")

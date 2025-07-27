@@ -2,7 +2,6 @@ package com.example.topfoodnow.service;
 
 import com.example.topfoodnow.dto.StoreCategoryDTO;
 import com.example.topfoodnow.dto.StoreCategoryResponseDTO;
-import com.example.topfoodnow.dto.CategoryDTO;
 import java.util.List;
 
 public interface StoreCategoryService {

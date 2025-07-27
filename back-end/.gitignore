@@ -73,14 +73,11 @@ logs/
 *.tar.gz
 *.rar
 
-# Spring Boot specific
-# 動態生成的上傳檔案目錄
-/src/main/resources/static/uploads/
 # spring.profiles.active=dev 可能產生特定於開發環境的配置
 application*.properties
 application*.yml
 application.properties
-/dynamic-content/
+gcs-key.json
 
 # Eclipse
 .classpath

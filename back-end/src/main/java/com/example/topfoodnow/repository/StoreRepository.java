@@ -1,4 +1,4 @@
-package com.example.topfoodnow.repository;
+ package com.example.topfoodnow.repository;
 
 import com.example.topfoodnow.model.StoreModel;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,8 +11,6 @@ import java.util.Optional;
 public interface StoreRepository extends JpaRepository<StoreModel, Integer> {
     @Query(value = "SELECT * FROM store ORDER BY RAND() LIMIT 3", nativeQuery = true)
     List<StoreModel> findRandom3Stores();
-
-    List<StoreModel> findTop6ByOrderByCreatedAtDesc();
 
     Optional<StoreModel> findByName(String name);
 }
