@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import auth from './auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,6 +13,7 @@ const router = createRouter({
         requiresAuth: true
       },
     },
+    ...auth,
     {
       path: '/cc',
       name: 'componentPage',
@@ -21,20 +23,11 @@ const router = createRouter({
         requiresAuth: true
       },
     },
-    {
-      path: '/sheetJs',
-      name: 'sheetJs',
-      component: () => import('@/views/SheetJs.vue'),
-      meta: {
-        title: 'SheetJs',
-        requiresAuth: true
-      },
-    }
   ]
 })
 
 router.beforeEach(async (to, from, next) => {
-  document.title = `${to.meta.title} | 能源管理系統`
+  document.title = `${to.meta.title} | TopFoodNow`
 
   if (to.meta.requiresAuth) return next()
 

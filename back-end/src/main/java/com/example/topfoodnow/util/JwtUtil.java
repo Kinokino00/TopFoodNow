@@ -8,9 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Date;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Component
@@ -19,7 +20,7 @@ public class JwtUtil {
     private String secret;
 
     @Value("${jwt.expiration}")
-    private long expiration;
+    private long expiration; // 以毫秒為單位
 
     // 生成密鑰
     private SecretKey getSigningKey() {
@@ -37,6 +38,11 @@ public class JwtUtil {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    // 從 token 中提取 JTI (JWT ID)
+    public String extractJti(String token) {
+        return extractClaim(token, Claims::getId);
+    }
+
     // 從 token 中提取單個聲明
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
@@ -44,7 +50,7 @@ public class JwtUtil {
     }
 
     // 從 token 中提取所有聲明 (解析 JWT)
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
@@ -64,6 +70,8 @@ public class JwtUtil {
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
+        String jti = UUID.randomUUID().toString(); // 生成唯一 ID
+        claims.put(Claims.ID, jti); // 將 JTI 放入 claims
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)

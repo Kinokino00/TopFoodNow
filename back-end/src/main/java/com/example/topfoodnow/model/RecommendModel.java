@@ -1,6 +1,10 @@
 package com.example.topfoodnow.model;
 
 import com.example.topfoodnow.converter.StringListToJsonConverter;
+import jakarta.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -9,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "recommend")
@@ -37,6 +42,10 @@ public class RecommendModel {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Convert(converter = StringListToJsonConverter.class)
+    @Column(name = "photo_url", columnDefinition = "TEXT")
+    private List<String> photoUrls;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "recommend_category",
@@ -44,8 +53,4 @@ public class RecommendModel {
         inverseJoinColumns = @JoinColumn(name = "category_id")
     )
     private Set<CategoryModel> categories = new HashSet<>();
-
-    @Column(name = "photo_url", columnDefinition = "JSON")
-    @Convert(converter = StringListToJsonConverter.class)
-    private List<String> photoUrls;
 }

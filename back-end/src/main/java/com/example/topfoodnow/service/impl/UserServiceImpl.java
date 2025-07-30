@@ -2,38 +2,49 @@ package com.example.topfoodnow.service.impl;
 
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.model.RoleModel;
+import com.example.topfoodnow.service.GcsService;
 import com.example.topfoodnow.service.UserService;
 import com.example.topfoodnow.service.MailService;
-import com.example.topfoodnow.controller.CategoryController;
 import com.example.topfoodnow.repository.RoleRepository;
 import com.example.topfoodnow.repository.UserRepository;
 import com.example.topfoodnow.dto.UserProfileUpdateDTO;
+import com.example.topfoodnow.dto.UserProfileResponseDTO;
+import com.example.topfoodnow.dto.UserRegisterRequestDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.io.IOException;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private static final Logger logger = LoggerFactory.getLogger(CategoryController.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Value("${app.base-url}")
     private String appBaseUrl;
 
+    @Autowired
     private UserRepository userRepository;
+
+    @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private MailService mailService;
 
-    public UserServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    @Autowired
+    private GcsService gcsService;
 
     /**
      * 根據用戶 ID 查找用戶
@@ -56,23 +67,46 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 新增的 save 方法實現
+     * @param user 待保存的用戶模型
+     * @return 保存後的用戶模型
+     */
+    @Override
+    @Transactional // 添加事務管理
+    public UserModel save(UserModel user) {
+        return userRepository.save(user);
+    }
+
+    /**
      * 註冊新用戶並寄送驗證信
-     * @param user 待註冊的用戶模型
+     * @param requestDTO 待註冊的用戶模型
      * @return 儲存後的用戶模型
      */
     @Override
     @Transactional
-    public UserModel addUser(UserModel user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        String verificationCode = UUID.randomUUID().toString();
-        user.setVerificationCode(verificationCode);
-        user.setEnabled(false);
+    public UserModel addUser(UserRegisterRequestDTO requestDTO) throws IOException {
+        UserModel user = new UserModel();
+        user.setEmail(requestDTO.getEmail());
+        user.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
+        user.setName(requestDTO.getName());
+        user.setYtUrl(requestDTO.getYtUrl());
+        user.setIgUrl(requestDTO.getIgUrl());
+        user.setEnabled(false); // 預設為未啟用
+        user.setVerificationCode(UUID.randomUUID().toString()); // 生成驗證碼
 
         RoleModel userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RuntimeException("Default USER role not found!"));
+                .orElseThrow(() -> new EntityNotFoundException("Role 'USER' not found. Please ensure default roles are set up."));
         user.setRole(userRole);
+
+        // 處理頭像上傳 (註冊)
+        if (requestDTO.getProfilePictureFile() != null && !requestDTO.getProfilePictureFile().isEmpty()) {
+            String profilePicUrl = gcsService.uploadFile(requestDTO.getProfilePictureFile(), "profile-pictures/");
+            user.setProfilePictureUrl(profilePicUrl);
+            logger.info("註冊用戶 {} 上傳頭像成功。URL: {}", requestDTO.getEmail(), profilePicUrl);
+        }
+
         UserModel savedUser = userRepository.save(user);
-        mailService.sendVerificationEmail(user.getEmail(), user.getName(), verificationCode);
+        logger.info("已為用戶 {} 生成驗證碼並準備發送郵件。", user.getEmail());
         return savedUser;
     }
 
@@ -193,20 +227,67 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-
     /**
-     * 更新用戶個人資料 (僅限名稱、YouTube 和 Instagram 連結)
+     * 更新用戶個人資料 (包含名稱、YouTube 和 Instagram 連結及頭像)
      * @param userId 要更新的用戶 ID
      * @param updateDTO 包含更新資訊的 DTO
      * @return 更新後的 UserModel
      */
     @Override
     @Transactional
-    public UserModel updateProfile(Integer userId, UserProfileUpdateDTO updateDTO) {
-        UserModel user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("用戶未找到，ID: " + userId));
+    public UserModel updateProfile(Integer userId, UserProfileUpdateDTO updateDTO) throws IOException { // 增加 IOException
+        UserModel user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("未找到用戶 ID: " + userId));
+
         user.setName(updateDTO.getName());
         user.setYtUrl(updateDTO.getYtUrl());
         user.setIgUrl(updateDTO.getIgUrl());
+
+        // 處理頭像
+        MultipartFile profilePictureFile = updateDTO.getProfilePictureFile();
+        String oldProfilePictureUrl = user.getProfilePictureUrl();
+
+        if (profilePictureFile != null && !profilePictureFile.isEmpty()) {
+            // 上傳新圖片
+            String newProfilePictureUrl = gcsService.uploadFile(profilePictureFile, "profile-pictures/");
+            user.setProfilePictureUrl(newProfilePictureUrl);
+            logger.info("用戶 ID: {} 更新頭像成功。新URL: {}", userId, newProfilePictureUrl);
+
+            // 刪除舊圖片 (如果存在)
+            if (oldProfilePictureUrl != null && !oldProfilePictureUrl.isEmpty()) {
+                try {
+                    gcsService.deleteFile(oldProfilePictureUrl);
+                    logger.info("用戶 ID: {} 成功刪除舊頭像: {}", userId, oldProfilePictureUrl);
+                } catch (Exception e) {
+                    logger.error("用戶 ID: {} 刪除舊頭像失敗: {}. URL: {}", userId, e.getMessage(), oldProfilePictureUrl, e);
+                }
+            }
+        } else if (profilePictureFile != null && profilePictureFile.isEmpty() && oldProfilePictureUrl != null) {
+            // 如果 profilePictureFile 不為 null 但為空 (表示前端明確清空了文件選擇器)，並且有舊頭像，表示用戶希望刪除頭像而不上傳新頭像
+            try {
+                gcsService.deleteFile(oldProfilePictureUrl);
+                user.setProfilePictureUrl(null); // 將 URL 設置為 null
+                logger.info("用戶 ID: {} 成功刪除頭像 (無新頭像上傳): {}", userId, oldProfilePictureUrl);
+            } catch (Exception e) {
+                logger.error("用戶 ID: {} 刪除頭像失敗 (無新頭像上傳): {}. URL: {}", userId, e.getMessage(), oldProfilePictureUrl, e);
+                throw new IOException("刪除頭像失敗", e);
+            }
+        }
         return userRepository.save(user);
+    }
+
+    @Override
+    public UserProfileResponseDTO getUserProfileForPublicRecommend(Integer userId) {
+        UserModel user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("未找到用戶 ID: " + userId));
+
+        UserProfileResponseDTO dto = new UserProfileResponseDTO();
+        dto.setId(user.getId());
+        dto.setEmail(user.getEmail()); // 公開推薦頁面可能不需要 email
+        dto.setName(user.getName());
+        dto.setYtUrl(user.getYtUrl());
+        dto.setIgUrl(user.getIgUrl());
+        dto.setProfilePictureUrl(user.getProfilePictureUrl());
+        return dto;
     }
 }

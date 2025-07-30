@@ -101,7 +101,7 @@
 <script setup lang="ts">
 import { reactive, computed, watchEffect, ref, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import CustomCheckbox from '@/components/CustomCheckbox.vue'
-import { DropdownOption } from '@/components/CustomDropdown.vue'
+import { DropdownOption } from '@/components/dropdown/CustomDropdown.vue'
 import ScrollBar from '@/components/scrollBar/ScrollBar.vue'
 
 class MultiSelectOptionChecked extends DropdownOption {
@@ -137,7 +137,7 @@ const inputDivRef = ref<HTMLElement | null>()
 const state: any = reactive({
   multiSelectState: props.multiSelectState,
   getClasses: computed(() => ({
-    '!bg-gray-50 !text-gray-500': state.multiSelectState.disabled,
+    '!bg-gray-100 !text-gray-500': state.multiSelectState.disabled,
     'inputDivError': state.multiSelectState.errorMessage,
     'inputDivReadonly': state.multiSelectState.readonly
   })),
@@ -275,7 +275,7 @@ onBeforeUnmount(() => {
   &s {
     @apply flex items-center gap-1 w-[calc(100%-28px)] text-sm whitespace-nowrap overflow-hidden;
   }
-  @apply px-2 py-0.5 bg-gray-50 rounded-lg;
+  @apply px-2 py-0.5 bg-gray-100 rounded-lg;
 }
 </style>
 

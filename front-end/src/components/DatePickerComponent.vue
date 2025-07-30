@@ -120,7 +120,7 @@ const emit = defineEmits(['update:state.datePickerState.modelValue'])
   .mx-input {
     @apply h-10 px-3 py-2 text-sm font-normal rounded-lg shadow-none;
     &:disabled {
-      @apply bg-gray-50 cursor-auto;
+      @apply bg-gray-100 cursor-auto;
       &, &::placeholder {
         @apply text-gray-500;
       }
@@ -136,7 +136,7 @@ const emit = defineEmits(['update:state.datePickerState.modelValue'])
   }
   .cell, .mx-time-item { // 一般與time picker
     &:hover {
-      @apply text-primary-500 bg-primary-50 rounded-md;
+      @apply text-primary-500 bg-primary-100 rounded-md;
     }
     &.active {
       @apply text-white bg-primary-500 rounded-md;

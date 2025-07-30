@@ -9,7 +9,7 @@
   body {
     font-family: '微軟正黑體', 'Helvetica', 'Arial', 'Microsoft JhengHei';
     font-style: normal;
-    @apply w-full h-full bg-gray-50 text-gray-600 font-notoSansTC overflow-hidden;
+    @apply w-full h-full bg-gray-100 text-gray-600 text-xs font-notoSansTC overflow-hidden sm:text-base;
   }
 }
 

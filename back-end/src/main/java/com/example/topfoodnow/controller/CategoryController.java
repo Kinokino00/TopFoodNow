@@ -40,21 +40,21 @@ public class CategoryController {
     // endregion
 
 
-    // region 根據ID取得分類
-    @Operation(summary = "根據ID取得分類")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "成功取得分類"),
-        @ApiResponse(responseCode = "404", description = "未找到分類")
-    })
-    @GetMapping("/{id}")
-    public ResponseEntity<CategoryDTO> getCategoryById(@PathVariable Integer id) {
-        return categoryService.getCategoryById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> {
-                    logger.warn("未找到分類 ID: {}", id);
-                    return ResponseEntity.notFound().build();
-                });
-    }
+    // region 根據分類ID取得分類名稱
+//    @Operation(summary = "根據分類ID取得分類名稱")
+//    @ApiResponses({
+//        @ApiResponse(responseCode = "200", description = "成功取得分類"),
+//        @ApiResponse(responseCode = "404", description = "未找到分類")
+//    })
+//    @GetMapping("/{categoryId}")
+//    public ResponseEntity<CategoryDTO> getCategoryById(@PathVariable Integer id) {
+//        return categoryService.getCategoryById(id)
+//                .map(ResponseEntity::ok)
+//                .orElseGet(() -> {
+//                    logger.warn("未找到分類 ID: {}", id);
+//                    return ResponseEntity.notFound().build();
+//                });
+//    }
     // endregion
 
 

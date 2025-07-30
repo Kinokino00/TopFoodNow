@@ -12,14 +12,6 @@
       class="icon"
       :class="state.buttonState.iconClass"
     />
-    <img
-      v-if="state.getImg"
-      :src="state.getImg"
-      :class="[
-        state.buttonState.imgClass,
-        { 'contrast-60': state.buttonState.disabled }
-      ]"
-    />
     <span
       v-if="state.buttonState.label"
       :class="state.buttonState.labelClass"
@@ -32,7 +24,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from 'vue'
-import chartSearchIcon from '@/assets/images/chartSearchIcon.png'
 
 export type ButtonState = {
   id?: string
@@ -54,11 +45,8 @@ const state: any = reactive({
     'button-icon': state.buttonState.icon && !state.buttonState.label,
     'button-iconLabel': (state.buttonState.icon || state.buttonState.img) && state.buttonState.label,
     [`button-${state.buttonState.size || 'md'}`]: state.buttonState.size,
-    [`button-${state.buttonState.color}`]: state.buttonState.color,
-    'button-search': state.isButtonSearch,
-  })),
-  getImg: computed(() => state.buttonState.img || (state.isButtonSearch ? chartSearchIcon : '')),
-  isButtonSearch: computed(() => state.buttonState.label == '搜尋' || state.buttonState.label == '分析'),
+    [`button-${state.buttonState.color}`]: state.buttonState.color
+  }))
 })
 watchEffect(() => state.buttonState = props.buttonState)
 </script>
@@ -83,7 +71,7 @@ watchEffect(() => state.buttonState = props.buttonState)
   &-primary {
     @apply bg-primary-500 hover:bg-primary-400 active:bg-primary-700;
     &-light {
-      @apply text-gray-600 bg-primary-50 hover:bg-primary-100;
+      @apply text-gray-600 bg-primary-100 hover:bg-primary-100;
     }
   }
   &-secondary {
@@ -116,7 +104,7 @@ watchEffect(() => state.buttonState = props.buttonState)
   }
 
   &-transparent {
-    @apply w-fit bg-transparent text-gray-600 hover:bg-primary-50;
+    @apply w-fit bg-transparent text-gray-600 hover:bg-primary-100;
     &:active {
       @apply bg-primary-500 text-white;
     }

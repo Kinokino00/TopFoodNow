@@ -65,7 +65,7 @@ const state: any = reactive({
   textareaState: props.textareaState,
   getLayout: computed(() => state.textareaState.layout || 'col'),
   getClasses: computed(() => ({
-    '!border-gray-200 !bg-gray-50': state.textareaState.disabled,
+    '!border-gray-200 !bg-gray-100': state.textareaState.disabled,
     errorText: state.textareaState.errorMessage,
     inputDivError: state.textareaState.errorMessage,
     inputDivReadonly: state.textareaState.readonly

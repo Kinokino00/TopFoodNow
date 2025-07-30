@@ -80,6 +80,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/store/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/store-categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/recommend/user/{userId}", "/api/recommend/{userId}/{storeId}", "/api/recommend/all").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")

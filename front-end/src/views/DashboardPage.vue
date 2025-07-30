@@ -1,8 +1,6 @@
 <template>
-  <div class="flex">
-    <ScrollBar class="w-2/12 p-3 max-h-screen">
-    </ScrollBar>
-  </div>
+  <ScrollBar class="w-2/12 p-3 max-h-screen">
+  </ScrollBar>
 </template>
 
 <script lang="ts" setup>

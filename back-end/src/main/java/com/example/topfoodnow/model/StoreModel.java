@@ -3,6 +3,7 @@ package com.example.topfoodnow.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import lombok.ToString;
 import lombok.EqualsAndHashCode;
 import java.util.Set;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import jakarta.persistence.*;
 @Table(name = "store")
 @Data
 @EqualsAndHashCode(exclude = {"categories", "recommends"}) // 避免無限遞歸
+@ToString(exclude = {"recommends", "categories"}) // 避免無限遞歸
 @Schema(description = "餐廳資料")
 public class StoreModel {
     @Id
@@ -35,4 +37,7 @@ public class StoreModel {
         inverseJoinColumns = @JoinColumn(name = "category_id")
     )
     private Set<CategoryModel> categories = new HashSet<>();
+
+    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<RecommendModel> recommends = new HashSet<>();
 }

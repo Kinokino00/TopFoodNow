@@ -58,18 +58,23 @@ public class UserModel {
     @Schema(description = "重設密碼Token", accessMode = Schema.AccessMode.READ_ONLY, nullable = true)
     private String resetPasswordToken;
 
-    @Column(name = "yt_url")
-    @Schema(description = "YouTube 頻道連結", example = "https://www.youtube.com/channel/yourchannel", nullable = true)
-    private String ytUrl;
-
-    @Column(name = "ig_url")
-    @Schema(description = "Instagram 個人檔案連結", example = "https://www.instagram.com/yourprofile/", nullable = true)
-    private String igUrl;
-
     @Column(name = "reset_password_expiry_date")
     @Schema(description = "重設密碼Token過期時間", example = "2025-07-15T10:00:00", accessMode = Schema.AccessMode.READ_ONLY, nullable = true)
     private LocalDateTime resetPasswordExpiryDate;
+
     public boolean isResetPasswordTokenExpired() {
         return this.resetPasswordExpiryDate != null && LocalDateTime.now().isAfter(this.resetPasswordExpiryDate);
     }
+
+    @Column(name = "yt_url")
+    @Schema(description = "YouTube 頻道連結", nullable = true)
+    private String ytUrl;
+
+    @Column(name = "ig_url")
+    @Schema(description = "Instagram 個人檔案連結", nullable = true)
+    private String igUrl;
+
+    @Column(name = "profile_picture_url", length = 500)
+    @Schema(description = "頭像", nullable = true)
+    private String profilePictureUrl;
 }

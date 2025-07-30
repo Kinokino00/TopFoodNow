@@ -5,7 +5,7 @@
     @apply border-primary-400;
   }
   &:has(input:disabled, textarea:disabled) {
-    @apply bg-gray-50 text-gray-500 border-gray-200;
+    @apply bg-gray-100 text-gray-500 border-gray-200;
   }
 
   input, textarea {
@@ -55,11 +55,11 @@
       &, .p-chips-multiple-container {
         @apply w-full border-transparent shadow-none;
         &:has(input:disabled) {
-          @apply bg-gray-50;
+          @apply bg-gray-100;
         }
       }
       .p-chips-token {
-        @apply py-0.5 bg-gray-50 rounded;
+        @apply py-0.5 bg-gray-100 rounded;
       }
     }
     &Readonly.inputDiv {

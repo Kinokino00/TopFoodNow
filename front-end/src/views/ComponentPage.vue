@@ -1,12 +1,10 @@
 <template>
-  <!-- <YoutubePlayer src="https://www.youtube.com/watch?v=uRzs2kS3Blg" /> -->
   <div class="p-3">
     <CustomButton
       :buttonState="buttonState"
       @click="dialogState.isDialogShow"
     />
     <CustomDropdown :dropdownState="dropdownState"/>
-    <CustomMultiSelect :multiSelectState="multiSelectState"/>
     <CustomInputText :inputTextState="inputTextState"/>
     <CustomInputNumber :inputNumberState="inputNumberState"/>
     <CustomPassword :passwordState="passwordState"/>
@@ -31,10 +29,8 @@
 
 <script lang="ts" setup>
 import { reactive } from 'vue'
-// import YoutubePlayer from '@/components/YoutubePlayer.vue'
 import CustomButton from '@/components/CustomButton.vue'
-import CustomDropdown from '@/components/CustomDropdown.vue'
-import CustomMultiSelect from '@/components/CustomMultiSelect.vue'
+import CustomDropdown from '@/components/dropdown/CustomDropdown.vue'
 import CustomInputText from '@/components/CustomInputText.vue'
 import CustomInputNumber from '@/components/CustomInputNumber.vue'
 import CustomPassword from '@/components/CustomPassword.vue'
@@ -60,19 +56,6 @@ const dropdownState = reactive({
     { name: '選項4', value: '4', checked: false },
     { name: '選項5', value: '5', checked: false },
   ],
-  width: 'w-[220px]',
-})
-const multiSelectState = reactive({
-  label: 'multiSelect',
-  options: [
-    { name: '選項1', value: '1', checked: true },
-    { name: '選項22', value: '2', checked: true },
-    { name: '選項333', value: '3', checked: false },
-    { name: '選項4', value: '4', checked: false },
-    { name: '選項5', value: '5', checked: false },
-  ],
-  hasAllOption: true,
-  maxOption: 5,
   width: 'w-[220px]',
 })
 const inputTextState = reactive({

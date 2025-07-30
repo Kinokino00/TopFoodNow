@@ -25,7 +25,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/store-categories")
-@Tag(name = "店家與分類管理", description = "店家與分類關係的 API")
+@Tag(name = "店家與分類管理")
 public class StoreCategoryController {
     private static final Logger logger = LoggerFactory.getLogger(StoreCategoryController.class);
 
@@ -71,12 +71,13 @@ public class StoreCategoryController {
                 .orElse(false);
     }
 
-    @Operation(summary = "取得指定店家的所有分類", description = "返回指定店家經過排序的分類列表。排序規則：管理員添加的分類優先，其次是根據用戶選擇次數排序。")
+    @Operation(summary = "取得指定店家的所有分類", description = "返回指定店家經過排序的分類列表。排序規則：管理員添加的分類優先，其次是根據用戶選擇次數排序")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "成功獲取店家分類列表",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = StoreCategoryResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "未找到指定店家")
+        @ApiResponse(
+            responseCode = "200", description = "成功獲取店家分類列表",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = StoreCategoryResponseDTO.class))),
+        @ApiResponse(responseCode = "404", description = "未找到指定店家")
     })
     @GetMapping("/by-store/{storeId}")
     public ResponseEntity<StoreCategoryResponseDTO> getCategoriesForStore(@PathVariable Integer storeId) {
@@ -93,36 +94,38 @@ public class StoreCategoryController {
         }
     }
 
-    @Operation(summary = "取得指定分類下的所有店家", description = "返回指定分類下的所有店家列表。")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "成功獲取店家列表",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = StoreCategoryDTO.class))),
-            @ApiResponse(responseCode = "404", description = "未找到指定分類")
-    })
-    @GetMapping("/by-category/{categoryId}")
-    public ResponseEntity<List<StoreCategoryDTO>> getStoresForCategory(@PathVariable Integer categoryId) {
-        logger.info("請求獲取分類 ID: {} 下的所有店家。", categoryId);
-        try {
-            List<StoreCategoryDTO> stores = storeCategoryService.getStoresByCategoryId(categoryId);
-            return ResponseEntity.ok(stores);
-        } catch (jakarta.persistence.EntityNotFoundException e) {
-            logger.warn("未找到分類 ID: {}。", categoryId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        } catch (Exception e) {
-            logger.error("獲取分類 ID: {} 下的店家時發生錯誤: {}", categoryId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
+//    @Operation(summary = "取得指定分類下的所有店家")
+//    @ApiResponses(value = {
+//        @ApiResponse(
+//            responseCode = "200", description = "成功獲取店家列表",
+//            content = @Content(mediaType = "application/json",
+//            schema = @Schema(implementation = StoreCategoryDTO.class))),
+//        @ApiResponse(responseCode = "404", description = "未找到指定分類")
+//    })
+//    @GetMapping("/by-category/{categoryId}")
+//    public ResponseEntity<List<StoreCategoryDTO>> getStoresForCategory(@PathVariable Integer categoryId) {
+//        logger.info("請求獲取分類 ID: {} 下的所有店家。", categoryId);
+//        try {
+//            List<StoreCategoryDTO> stores = storeCategoryService.getStoresByCategoryId(categoryId);
+//            return ResponseEntity.ok(stores);
+//        } catch (jakarta.persistence.EntityNotFoundException e) {
+//            logger.warn("未找到分類 ID: {}。", categoryId);
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//        } catch (Exception e) {
+//            logger.error("獲取分類 ID: {} 下的店家時發生錯誤: {}", categoryId, e.getMessage(), e);
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+//        }
+//    }
 
-    @Operation(summary = "為店家添加或更新分類", description = "需要 ADMIN 權限。為指定店家添加多個分類。如果分類已存在，則更新其關聯。管理員添加的分類將在排序時優先。")
+    @Operation(summary = "為店家添加或更新分類", description = "需要 ADMIN 權限。為指定店家添加多個分類。如果分類已存在，則更新其關聯。管理員添加的分類將在排序時優先")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "分類添加/更新成功",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = StoreCategoryResponseDTO.class))),
-            @ApiResponse(responseCode = "400", description = "請求數據無效或分類/店家不存在"),
-            @ApiResponse(responseCode = "401", description = "未經認證"),
-            @ApiResponse(responseCode = "403", description = "無權限 (非管理員)")
+        @ApiResponse(
+            responseCode = "200", description = "分類添加/更新成功",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = StoreCategoryResponseDTO.class))),
+        @ApiResponse(responseCode = "400", description = "請求數據無效或分類/店家不存在"),
+        @ApiResponse(responseCode = "401", description = "未經認證"),
+        @ApiResponse(responseCode = "403", description = "無權限 (非管理員)")
     })
     @SecurityRequirement(name = "bearerAuth") // 此 API 需要 JWT 認證
     @PreAuthorize("hasRole('ADMIN')")
@@ -151,13 +154,13 @@ public class StoreCategoryController {
         }
     }
 
-    @Operation(summary = "從店家移除分類", description = "需要 ADMIN 權限。從指定店家移除一個分類關聯。")
+    @Operation(summary = "從店家移除分類", description = "需要 ADMIN 權限")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "分類成功移除"),
-            @ApiResponse(responseCode = "400", description = "請求數據無效"),
-            @ApiResponse(responseCode = "401", description = "未經認證"),
-            @ApiResponse(responseCode = "403", description = "無權限 (非管理員)"),
-            @ApiResponse(responseCode = "404", description = "未找到該關聯")
+        @ApiResponse(responseCode = "204", description = "分類成功移除"),
+        @ApiResponse(responseCode = "400", description = "請求數據無效"),
+        @ApiResponse(responseCode = "401", description = "未經認證"),
+        @ApiResponse(responseCode = "403", description = "無權限 (非管理員)"),
+        @ApiResponse(responseCode = "404", description = "未找到該關聯")
     })
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")

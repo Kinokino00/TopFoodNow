@@ -42,6 +42,6 @@ div[data-overlayscrollbars-viewport]:has(.buildLayer) {
 }
 
 .os-scrollbar .os-scrollbar-handle {
-  @apply opacity-20 hover:opacity-40;
+  @apply opacity-50 hover:opacity-70;
 }
 </style>

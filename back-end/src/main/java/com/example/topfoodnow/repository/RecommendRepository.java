@@ -4,6 +4,7 @@ import com.example.topfoodnow.model.RecommendModel;
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.model.StoreModel;
 import com.example.topfoodnow.dto.CategoryDTO;
+import com.example.topfoodnow.dto.StoreWithAvgScoreDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,7 +20,7 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Integ
     @Query("SELECT r FROM RecommendModel r JOIN FETCH r.user u JOIN FETCH r.store s LEFT JOIN FETCH r.categories c WHERE u = :user AND s = :store")
     Optional<RecommendModel> findByUserAndStore(@Param("user") UserModel user, @Param("store") StoreModel store);
 
-    // 新增：根據用戶ID查找所有推薦，與現有的 findByUserWithUserAndStoreAndCategories 重複，可以考慮保留一個更通用的名字
+    // 根據用戶ID查找所有推薦，與現有的 findByUserWithUserAndStoreAndCategories 重複，可以考慮保留一個更通用的名字
     // 我會建議將 Service 層的 findByUserId 映射到這個已經定義的查詢
     @Query("SELECT r FROM RecommendModel r JOIN FETCH r.user u JOIN FETCH r.store s LEFT JOIN FETCH r.categories c WHERE u.id = :userId")
     List<RecommendModel> findByUserId(@Param("userId") Integer userId); // 確保這個方法名存在於 Service 層的調用中
@@ -27,10 +28,6 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Integ
     // 根據用戶ID和店家ID查找推薦 (JOIN FETCH，避免 N+1 問題)
     @Query("SELECT r FROM RecommendModel r JOIN FETCH r.user u JOIN FETCH r.store s LEFT JOIN FETCH r.categories c WHERE u.id = :userId AND s.id = :storeId")
     Optional<RecommendModel> findByUserIdAndStoreId(@Param("userId") Integer userId, @Param("storeId") Integer storeId);
-
-    // 根據用戶ID查找所有推薦 (已經存在了，可以作為上面 findByUserId 的實現)
-    // @Query("SELECT r FROM RecommendModel r JOIN FETCH r.user u JOIN FETCH r.store s LEFT JOIN FETCH r.categories c WHERE u.id = :userId")
-    // List<RecommendModel> findByUserWithUserAndStoreAndCategories(@Param("userId") Integer userId); // 這個方法名與 Service 層的 findByUserId 不完全匹配，建議統一
 
     // 用於精確取得用戶對店家的推薦，用於所有推薦詳情頁面
     @Query("SELECT r FROM RecommendModel r JOIN FETCH r.user u JOIN FETCH r.store s LEFT JOIN FETCH r.categories c WHERE u.id = :userId AND s.id = :storeId")
@@ -51,7 +48,7 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Integ
             "ORDER BY RAND() LIMIT 3", nativeQuery = true)
     List<RecommendModel> findRandom3RecommendsWithUserAndStoreAndCategories();
 
-    // 獲取得特定店家按用戶選擇次數排序的分類列表
+    // 取得特定店家按用戶選擇次數排序的分類列表
     @Query(value = "SELECT new com.example.topfoodnow.dto.CategoryDTO(c.id, c.name) " +
             "FROM RecommendModel r " +
             "JOIN r.categories c " +
@@ -59,4 +56,10 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Integ
             "GROUP BY c.id, c.name " +
             "ORDER BY COUNT(DISTINCT r.user.id) DESC, c.id ASC")
     List<CategoryDTO> findCategoriesByStorePopularity(@Param("storeId") Integer storeId);
+
+    // 計算與特定店家關聯的推薦數量
+    int countByStoreId(Integer storeId);
+
+    // 取得店家ID
+    List<RecommendModel> findByStoreId(Integer storeId);
 }

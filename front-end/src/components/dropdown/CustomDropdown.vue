@@ -44,15 +44,14 @@
         top: state.optionsState.y + 'px'
       }"
     >
-      <div class="filter-container">
-        <input
-          class="filter-input"
-          type="text"
-          :class="state.dropdownState.filterClass"
-          v-model="state.filterState.selectValue"
-          :placeholder="state.dropdownState.filterPlaceholder ?? '請輸入'"
-        />
-      </div>
+      <input
+        v-if="state.dropdownState.filter"
+        class="filter-input"
+        type="text"
+        :class="state.dropdownState.filterClass"
+        v-model="state.filterState.selectValue"
+        :placeholder="state.dropdownState.filterPlaceholder ?? '請輸入'"
+      />
       <ScrollBar class="max-h-[160px]">
         <ul :class="{ 'mr-3': state.filterState.filteredOptions.length >= 4 }">
           <li
@@ -108,6 +107,7 @@ export type DropdownState = {
   editable?: boolean
   readonly?: boolean
   dataTestId?: string
+  filter?: boolean
   filterClass?: string
   filterPlaceholder?: string
 }
@@ -116,7 +116,7 @@ const inputDivRef = ref<HTMLElement | null>()
 const state: any = reactive({
   dropdownState: props.dropdownState,
   getClasses: computed(() => ({
-    '!bg-gray-50 !text-gray-500': state.dropdownState.disabled,
+    '!bg-gray-100 !text-gray-500': state.dropdownState.disabled,
     'inputDivError': state.dropdownState.errorMessage,
     'inputDivReadonly': state.dropdownState.readonly
   })),

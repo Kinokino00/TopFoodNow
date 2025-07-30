@@ -78,13 +78,13 @@ const emit = defineEmits(['update:state.toastState.visible'])
   box-shadow: 0 4px 6px -3px rgba(0, 0, 0, .1), 0 10px 15px -4px rgba(0, 0, 0, .1);
 
   &-success {
-    @apply bg-secondary-50 border-secondary-500 text-secondary-500;
+    @apply bg-secondary-100 border-secondary-500 text-secondary-500;
   }
   &-failed {
-    @apply bg-danger-50 border-danger-500 text-danger-500;
+    @apply bg-danger-100 border-danger-500 text-danger-500;
   }
   &-nonstandard {
-    @apply bg-warning-50 border-warning-600 text-warning-600;
+    @apply bg-primary-100 border-primary-600 text-primary-600;
   }
 
   &.show {

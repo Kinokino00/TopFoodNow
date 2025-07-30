@@ -25,7 +25,7 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     /**
      * 從 GCS 刪除文件
-     * @param fileUrl 要刪除的文件的完整 GCS URL
+     * @param fileUrl 欲刪除的文件的完整 GCS URL
      */
     public void deleteFile(String fileUrl) {
         gcsService.deleteFile(fileUrl);
