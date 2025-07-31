@@ -4,7 +4,7 @@
   </div>
   
   <div class="header hidden justify-between p-5 w-full cursor-pointer sm:flex md:p-7">
-    <img src="@/assets/images/logo.png" alt="logo" class="w-[90px] md:w-[102px]" style="filter: drop-shadow(0 0 4px white) drop-shadow(0 0 4px white) drop-shadow(0 0 4px white);"/>
+    <img src="@/assets/images/logo.svg" alt="logo" class="w-[90px] md:w-[102px]" style="filter: drop-shadow(0 0 4px white) drop-shadow(0 0 4px white) drop-shadow(0 0 4px white);"/>
     <button class="flex items-center gap-1.5 h-fit" @click.stop="isOpen = !isOpen">
       <p class="text-sm md:text-base" style="text-shadow: 0 0 8px black, 0 0 8px black;">userName</p>
       <font-awesome-icon

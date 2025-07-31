@@ -1,7 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 
-import { start } from 'repl';
-
 export default {
   content: [
     "./index.html",

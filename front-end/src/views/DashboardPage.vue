@@ -1,11 +1,11 @@
 <template>
-  <ScrollBar class="max-h-screen">
+  <ScrollBar v-if="isReady" class="max-h-screen">
     <div class="bg-right"></div>
     
     <!-- logo + input -->
     <div class="container mt-[16rem]">
-      <div class="flex flex-col gap-4 w-full md:w-8/12">
-        <img src="@/assets/images/logo.png" alt="logo" class="w-28 mx-auto sm:min-w-[24vw] md:min-w-[22vw]" />
+      <div class="flex flex-col gap-4 w-full md:w-8/12 xl:w-6/12">
+        <img src="@/assets/images/logo.svg" alt="logo" class="w-28 mx-auto max-w-[260px] sm:w-[24vw] md:w-[22vw]" />
         <div class="relative flex items-center w-full">
           <CustomInputText
             class="w-full"
@@ -13,7 +13,7 @@
               modelValue: '',
               placeholder: '搜尋',
               inputDivClass: '!border-primary-500 !rounded-full',
-              inputClass: 'relative !text-xs sm:!text-sm sm:!-top-px',
+              inputClass: 'relative !text-xs sm:!text-sm sm:!-top-px xl:!text-base',
             }"
           />
           <CustomButton
@@ -27,17 +27,17 @@
           />
         </div>
         <div class="flex item-center gap-2">
-          <div class="tag">分類</div>
+          <div v-for="category in filteredCategories" :key="category.id" class="tag">{{ category.name }}</div>
         </div>
       </div>
     </div>
 
     <!-- stores -->
-    <div class="relative mt-24 md:mt-32">
-      <div class="container gap-4 items-center pb-16">
+    <div class="relative bottom-0 mt-24 md:mt-32">
+      <div class="container items-center gap-4 min-h-[46vh] pb-16">
         <div class="flex items-center gap-2 w-9/12 md:w-7/12">
           <div class="line"></div>
-          <p class="whitespace-nowrap sm:text-sm md:text-base">最新餐廳推薦</p>
+          <p class="whitespace-nowrap sm:text-sm md:text-base xl:text-lg">最新餐廳推薦</p>
           <div class="line"></div>
         </div>
         <div class="flex flex-col gap-4 w-full md:flex-row md:gap-6">
@@ -49,7 +49,6 @@
             <h3 class="store-name">{{ store.name }}</h3>
             <div class="store-star">
               <font-awesome-icon v-for="n in Math.floor(store.averageScore)" :key="'solid-' + store.id + '-' + n" icon="fa-solid fa-star" />
-              <font-awesome-icon v-if="store.averageScore % 1 >= 0.5" icon="fa-solid fa-star-half-stroke" />
               <font-awesome-icon v-for="n in (5 - Math.ceil(store.averageScore))" :key="'regular-' + store.id + '-' + n" icon="fa-regular fa-star" />
             </div>
           </div>
@@ -72,14 +71,39 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import ScrollBar from '@/components/scrollBar/ScrollBar.vue'
 import CustomInputText from '@/components/CustomInputText.vue'
 import CustomButton from '@/components/CustomButton.vue'
 import type { Store } from '@/types/store'
 import { getStoresRandomly } from '@/services/storeService'
+import type { Categories } from '@/types/categories'
+import { getCategories } from '@/services/categoryService'
 
+
+const isReady = ref(false)
 const stores = ref<Store[]>([])
+const categories = ref<Categories[]>([])
+
+function getScreenSize() {
+  if (window.innerWidth < 576) return 'sm';
+  if (window.innerWidth < 992) return 'lg';
+  if (window.innerWidth < 1200) return 'xl';
+  return '2xl';
+}
+
+const screenSize = ref(getScreenSize());
+
+window.addEventListener('resize', () => {
+  screenSize.value = getScreenSize();
+});
+
+const filteredCategories = computed(() => {
+  let count = 3;
+  if (screenSize.value === 'lg') count = 5;
+  else if (screenSize.value === 'xl' || screenSize.value === '2xl') count = 6;
+  return categories.value.slice(0, count);
+});
 
 const fetchStores = async () => {
   try {
@@ -91,8 +115,23 @@ const fetchStores = async () => {
   }
 }
 
+const fetchCategories = async () => {
+  try {
+    const data = await getCategories()
+    categories.value = data
+  } catch (err: any) {
+    categories.value = []
+    console.error('Error fetching categories:', err)
+  }
+}
+
+const fetchAll = async () => {
+  await Promise.all([fetchStores(), fetchCategories()])
+  isReady.value = true
+}
+
 onMounted(() => {
-  fetchStores()
+  fetchAll()
 })
 </script>
 
@@ -102,12 +141,14 @@ onMounted(() => {
 }
 .bg-right {
   @apply absolute top-0 right-0 w-[276px] h-[484px] bg-cover bg-no-repeat bg-[url('@/assets/images/bg-index-sm.png')];
-  @apply sm:w-[370px] sm:h-[650px];
-  @apply md:w-[468px] md:h-[820px];
-  // @apply md:w-[1320px] md:h-[1614px] md:bg-[url('@/assets/images/bg-index.png')];
+  @apply  sm:w-[370px]  sm:h-[650px];
+  @apply  md:w-[468px]  md:h-[820px];
+  @apply  lg:w-[532px]  lg:h-[930px];
+  @apply  xl:w-[576px]  xl:h-[1010px];
+  @apply 2xl:w-[646px] 2xl:h-[1130px];
 }
 .tag {
-  @apply py-1 px-2 text-xs text-white bg-primary-500 rounded-full;
+  @apply py-1 px-2 bg-primary-500 text-xs text-white whitespace-nowrap rounded-full xl:text-sm;
 }
 
 // stores
@@ -128,14 +169,18 @@ onMounted(() => {
     }
   }
   &-name {
-    @apply text-xs text-center font-semibold text-gray-800 sm:text-sm;
+    @apply text-xs text-center font-semibold text-gray-800 sm:text-sm xl:text-base;
   }
   &-star {
-    @apply flex items-center gap-0.5 justify-center text-star text-xxs sm:text-xs;
+    @apply flex items-center gap-0.5 justify-center text-star text-xxs sm:text-xs xl:text-sm;
   }
 }
 
 .bg-left {
-  @apply absolute -z-[1] bottom-0 left-0 w-[130px] h-[196px] bg-cover bg-no-repeat bg-[url('@/assets/images/bg-left.png')] sm:w-[180px] sm:h-[270px];
+  @apply absolute -z-[1] bottom-0 left-0 w-[130px] h-[196px] bg-cover bg-no-repeat bg-[url('@/assets/images/bg-left.png')];
+  @apply  sm:w-[180px]  sm:h-[270px];
+  @apply  lg:w-[210px]  lg:h-[310px];
+  @apply  xl:w-[234px]  xl:h-[350px];
+  @apply 2xl:w-[260px] 2xl:h-[390px];
 }
 </style>
