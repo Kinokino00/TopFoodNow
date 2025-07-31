@@ -1,5 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
+import { start } from 'repl';
+
 export default {
   content: [
     "./index.html",
@@ -7,13 +9,14 @@ export default {
   ],
   theme: {
     screens: {
-      sm: '640px',
-      md: '720px',
-      lg: '1024px',
-      xl: '1280px',
-      '2xl': '1536px'
+      sm: '576px',
+      md: '768px',
+      lg: '992px',
+      xl: '1200px',
+      '2xl': '1400px'
     },
     fontSize: {
+      xxs: '0.6rem',
       xs: '0.75rem',
       sm: '0.875rem',
       base: '1rem',
@@ -69,6 +72,7 @@ export default {
         800: '#333333',
         900: '#1A1A1A',
       },
+      star: '#FFCC00',
       white: '#FFFFFF',
       black: '#000000',
       transparent: 'transparent'

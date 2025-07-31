@@ -5,8 +5,6 @@ import com.example.topfoodnow.dto.LoginRequestDTO;
 import com.example.topfoodnow.dto.ForgotPasswordRequestDTO;
 import com.example.topfoodnow.dto.ResetPasswordRequestDTO;
 import com.example.topfoodnow.service.UserService;
-import com.example.topfoodnow.service.MailService;
-import com.example.topfoodnow.service.LogService;
 import com.example.topfoodnow.service.JwtBlacklistService;
 import com.example.topfoodnow.dto.AuthResponseDTO;
 import com.example.topfoodnow.dto.UserProfileUpdateDTO;
@@ -53,14 +51,11 @@ public class UserController {
     @Value("${app.base-url}")
     private String appBaseUrl;
 
-    @Autowired
     private final UserService userService;
-    private final MailService mailService;
-    private final LogService logService;
-    private final JwtUtil jwtUtil;
-    private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
-    private JwtBlacklistService jwtBlacklistService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final JwtBlacklistService jwtBlacklistService;
 
     // region 輔助方法: 取得當前認證用戶資訊
     /**
@@ -83,7 +78,6 @@ public class UserController {
         }
     }
     // endregion
-
 
     // region 註冊
     @Operation(
@@ -281,7 +275,6 @@ public class UserController {
     }
     // endregion
 
-
     // region 會員中心 - 取得當前用戶資料
     @Operation(
             summary = "取得當前用戶資料",
@@ -317,6 +310,7 @@ public class UserController {
 
         return ResponseEntity.ok(responseDTO);
     }
+    // endregion
 
     // region 會員中心 - 更新當前用戶資料 (包含名稱、IG、YT、頭像)
     @Operation(
@@ -412,8 +406,16 @@ public class UserController {
 
     // region 登出
     @Operation(
-        summary = "用戶登出",
-        description = "將當前用戶的 JWT Token 加入黑名單，使其立即失效",
+        summary = "登出",
+        description = "接收純粹的 JWT Token (無需 Bearer 前綴)，將其加入黑名單，使其立即失效",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "純粹的 JWT Token 字串",
+            required = true,
+            content = @Content(
+                mediaType = MediaType.TEXT_PLAIN_VALUE,
+                schema = @Schema(type = "string", example = "eyJhbGciOiJIUzI1NiJ9.eyJleWJjI...")
+            )
+        ),
         responses = {
             @ApiResponse(
                 responseCode = "200", description = "登出成功",
@@ -422,36 +424,40 @@ public class UserController {
                     schema = @Schema(type = "string", example = "登出成功"))
             ),
             @ApiResponse(
-            responseCode = "400",
-            description = "無效請求：缺少或格式不正確的 Authorization Header",
-            content = @Content(
-                mediaType = MediaType.TEXT_PLAIN_VALUE,
-                schema = @Schema(type = "string", example = "缺少或格式不正確的 Authorization Header"))
-            ),
-            @ApiResponse(
-                responseCode = "500",
-                description = "伺服器內部錯誤導致登出失敗",
+                responseCode = "400",
+                description = "無效請求：Token 為空或無法處理",
                 content = @Content(
                     mediaType = MediaType.TEXT_PLAIN_VALUE,
-                    schema = @Schema(type = "string", example = "登出失敗：無效的 Token"))
+                    schema = @Schema(type = "string", example = "登出失敗：Token 為空或無法處理"))
             )
         }
     )
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = null;
+    public ResponseEntity<?> logout(@RequestBody String token) {
+        String authorizationHeader = "Bearer " + token;
+
+        String extractedToken = null;
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            token = authorizationHeader.substring(7); // 提取 JWT
+            extractedToken = authorizationHeader.substring(7);
         } else {
-            return ResponseEntity.badRequest().body("缺少或格式不正確的 Authorization Header。");
+            return ResponseEntity.badRequest().body("登出失敗：Token 格式錯誤");
+        }
+
+        if (extractedToken == null || extractedToken.isEmpty()) {
+            return ResponseEntity.badRequest().body("登出失敗：Token 為空");
         }
 
         try {
-            jwtBlacklistService.blacklistToken(token); // 將 Token 加入黑名單
-            return ResponseEntity.ok("登出成功。");
+            if (jwtUtil.extractJti(extractedToken) == null) {
+                System.err.println("嘗試登出但Token缺少JTI");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("登出失敗：Token 無效 (缺少JTI)");
+            }
+
+            jwtBlacklistService.blacklistToken(extractedToken); // 將 Token 加入黑名單
+            return ResponseEntity.ok("登出成功");
         } catch (Exception e) {
             System.err.println("嘗試登出但Token無效或處理失敗: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("登出失敗：無效的 Token。");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("登出失敗：無效的 Token");
         }
     }
     // endregion

@@ -64,7 +64,7 @@ export type PasswordState = {
   layout?: string      // 預設 'col'
   width?: string
   iconClass?: string
-  icon?: string[]
+  icon?: string
   labelClass?: string  // 預設 'min-w-[100px]'
   label?: string
   inputDivClass?: string

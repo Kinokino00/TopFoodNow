@@ -18,6 +18,12 @@
     >
       {{ state.buttonState.label }}
     </span>
+    <font-awesome-icon
+      v-if="state.buttonState.iconRight"
+      :icon="state.buttonState.iconRight"
+      class="icon"
+      :class="state.buttonState.iconRightClass"
+    />
   </button>
 </template>
 
@@ -27,8 +33,10 @@ import { computed, reactive, watchEffect } from 'vue'
 
 export type ButtonState = {
   id?: string
-  icon?: string[]
+  icon?: string
   iconClass?: string
+  iconRight?: string
+  iconRightClass?: string
   img?: string
   imgClass?: string
   label?: string
@@ -54,7 +62,7 @@ watchEffect(() => state.buttonState = props.buttonState)
 
 <style lang="scss" scoped>
 .button {
-  @apply h-10 px-3 bg-gray-600 text-white whitespace-nowrap rounded-lg outline-none hover:bg-gray-500 active:bg-gray-700;
+  @apply px-3 bg-gray-600 text-white whitespace-nowrap rounded-lg outline-none hover:bg-gray-500 active:bg-gray-700;
   &:disabled {
     &, &:hover {
       @apply bg-gray-100 text-gray-500 border-none;
@@ -88,9 +96,9 @@ watchEffect(() => state.buttonState = props.buttonState)
   }
 
   &-icon {
-    @apply h-10 px-4;
+    @apply py-1 px-1.5;
     svg {
-      @apply text-lg;
+      @apply text-sm;
     }
     &Label {
       @apply flex items-center gap-1 py-2;

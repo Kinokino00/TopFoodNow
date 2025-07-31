@@ -11,6 +11,7 @@
         class="labelText"
         :class="state.getLabelClass"
       >
+    <font-awesome-icon icon="fa-solid fa-magnifying-glass" />
         <font-awesome-icon
           class="icon"
           :icon="state.inputTextState.icon"
@@ -59,7 +60,7 @@ export type InputTextState = {
   layout?: string      // 預設 'col'
   width?: string
   iconClass?: string
-  icon?: string[]
+  icon?: string
   labelClass?: string  // 預設 'min-w-[100px]'
   label?: string
   inputDivClass?: string

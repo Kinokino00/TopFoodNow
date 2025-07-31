@@ -8,8 +8,8 @@
 @layer base {
   body {
     font-family: '微軟正黑體', 'Helvetica', 'Arial', 'Microsoft JhengHei';
-    font-style: normal;
-    @apply w-full h-full bg-gray-100 text-gray-600 text-xs font-notoSansTC overflow-hidden sm:text-base;
+    background-image: url('@/assets/images/bg.png');
+    @apply w-full h-full bg-[url('@/assets/images/bg.png')] bg-no-repeat text-gray-600 text-xs font-notoSansTC font-normal overflow-hidden sm:text-base;
   }
 }
 

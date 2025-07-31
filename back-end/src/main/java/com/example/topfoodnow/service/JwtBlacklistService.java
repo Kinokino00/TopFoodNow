@@ -33,6 +33,7 @@ public class JwtBlacklistService {
                 // 計算 Token 距離過期還有多少時間，以便 Redis 設置相同的 TTL
                 long remainingTime = expiration.getTime() - now.getTime();
                 if (remainingTime > 0) {
+                    // 將 Token 的 JTI 寫入 Redis
                     redisTemplate.opsForValue().set(BLACKLIST_PREFIX + jti, "blacklisted", remainingTime, TimeUnit.MILLISECONDS);
                     System.out.println("Token with JTI: " + jti + " blacklisted until " + expiration);
                 }

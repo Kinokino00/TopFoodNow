@@ -24,13 +24,12 @@ public class StoreController {
 
     private final StoreService storeService;
 
-
     @Operation(summary = "隨機獲取指定數量的店家及其平均評分", description = "返回店家ID、名稱和基於其推薦的平均評分。")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "成功獲取店家列表"),
-            @ApiResponse(responseCode = "400", description = "請求參數無效")
+        @ApiResponse(responseCode = "200", description = "成功獲取店家列表"),
+        @ApiResponse(responseCode = "400", description = "請求參數無效")
     })
-    @GetMapping("/random-with-avg-score")
+    @GetMapping("/random")
     public ResponseEntity<List<StoreWithAvgScoreDTO>> getRandomStoresWithAverageScore(
             @Parameter(description = "要獲取的店家數量", required = false, example = "3")
             @RequestParam(defaultValue = "3") int limit) {

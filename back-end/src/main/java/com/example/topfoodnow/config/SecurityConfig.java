@@ -3,10 +3,7 @@ package com.example.topfoodnow.config;
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.repository.UserRepository;
 import com.example.topfoodnow.filter.JwtRequestFilter;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
+import com.example.topfoodnow.filter.DebugCorsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -27,6 +24,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.http.HttpMethod;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -36,13 +37,14 @@ import java.util.Optional;
 public class SecurityConfig {
     private final UserRepository userRepository;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final DebugCorsFilter debugCorsFilter;
 
-    // 修改建構子，接收 CorsConfigurationSource
-    public SecurityConfig(UserRepository userRepository, CorsConfigurationSource corsConfigurationSource) {
+    public SecurityConfig(UserRepository userRepository, CorsConfigurationSource corsConfigurationSource,
+                          DebugCorsFilter debugCorsFilter) {
         this.userRepository = userRepository;
         this.corsConfigurationSource = corsConfigurationSource;
+        this.debugCorsFilter = debugCorsFilter;
     }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -91,8 +93,8 @@ public class SecurityConfig {
                 // 配置會話管理為無狀態 (適用於 JWT)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // 添加 JWT 過濾器在 UsernamePasswordAuthenticationFilter 之前
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(debugCorsFilter, JwtRequestFilter.class);
 
         return http.build();
     }
@@ -101,7 +103,8 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // 確保允許的源與您的前端應用保持一致
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:8080"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:5173", "http://localhost:8080"));
+        // configuration.setAllowedOrigins(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // 允許所有頭部，包括 Authorization
         configuration.setAllowedHeaders(Arrays.asList("*"));
