@@ -1,10 +1,6 @@
 package com.example.topfoodnow.model;
 
 import com.example.topfoodnow.converter.StringListToJsonConverter;
-import jakarta.persistence.Converter;
-import jakarta.persistence.AttributeConverter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,7 +9,6 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "recommend")

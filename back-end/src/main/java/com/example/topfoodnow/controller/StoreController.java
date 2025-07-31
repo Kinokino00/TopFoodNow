@@ -1,6 +1,5 @@
 package com.example.topfoodnow.controller;
 
-import com.example.topfoodnow.model.StoreModel;
 import com.example.topfoodnow.service.StoreService;
 import com.example.topfoodnow.dto.StoreWithAvgScoreDTO;
 import io.swagger.v3.oas.annotations.Operation;

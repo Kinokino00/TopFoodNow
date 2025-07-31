@@ -20,10 +20,9 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Integ
     @Query("SELECT r FROM RecommendModel r JOIN FETCH r.user u JOIN FETCH r.store s LEFT JOIN FETCH r.categories c WHERE u = :user AND s = :store")
     Optional<RecommendModel> findByUserAndStore(@Param("user") UserModel user, @Param("store") StoreModel store);
 
-    // 根據用戶ID查找所有推薦，與現有的 findByUserWithUserAndStoreAndCategories 重複，可以考慮保留一個更通用的名字
-    // 我會建議將 Service 層的 findByUserId 映射到這個已經定義的查詢
+    // 根據用戶ID查找所有推薦
     @Query("SELECT r FROM RecommendModel r JOIN FETCH r.user u JOIN FETCH r.store s LEFT JOIN FETCH r.categories c WHERE u.id = :userId")
-    List<RecommendModel> findByUserId(@Param("userId") Integer userId); // 確保這個方法名存在於 Service 層的調用中
+    List<RecommendModel> findByUserId(@Param("userId") Integer userId);
 
     // 根據用戶ID和店家ID查找推薦 (JOIN FETCH，避免 N+1 問題)
     @Query("SELECT r FROM RecommendModel r JOIN FETCH r.user u JOIN FETCH r.store s LEFT JOIN FETCH r.categories c WHERE u.id = :userId AND s.id = :storeId")
@@ -41,7 +40,7 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Integ
             Pageable pageable
     );
 
-    // 取隨機 3 筆推薦
+    // 取隨機 3 筆推薦 (此方法返回 RecommendModel，如果需要特定數據才用它)
     @Query(value = "SELECT r.* FROM recommend r " +
             "JOIN user u ON r.user_id = u.id " +
             "JOIN store s ON r.store_id = s.id " +
@@ -56,10 +55,16 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Integ
             "GROUP BY c.id, c.name " +
             "ORDER BY COUNT(DISTINCT r.user.id) DESC, c.id ASC")
     List<CategoryDTO> findCategoriesByStorePopularity(@Param("storeId") Integer storeId);
-
     // 計算與特定店家關聯的推薦數量
     int countByStoreId(Integer storeId);
 
     // 取得店家ID
     List<RecommendModel> findByStoreId(Integer storeId);
+
+    // 查詢某店家的平均評分
+    @Query("SELECT CAST(AVG(r.score) AS int) FROM RecommendModel r WHERE r.store.id = :storeId")
+    Integer findAverageScoreByStoreId(@Param("storeId") Integer storeId);
+
+    // 查詢某店家最新的推薦
+    Optional<RecommendModel> findTopByStoreIdOrderByCreatedAtDesc(Integer storeId);
 }
