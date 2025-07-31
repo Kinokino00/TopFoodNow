@@ -41,19 +41,16 @@
           <div class="line"></div>
         </div>
         <div class="flex flex-col gap-4 w-full md:flex-row md:gap-6">
-      <li v-for="store in stores" :key="store.id" class="store-item">
-        <h3>{{ store.name }}</h3>
-        <p>平均評分: {{ store.averageScore }}</p>
-      </li>
-          <div v-for="i in 3" :key="i" class="store-container" :class="{ 'mt-7': i === 2 }">
+          <div v-for="(store, i) in stores" :key="store.id" class="store-container" :class="{ 'mt-7': i === 1 }">
             <div class="store-image">
-              <font-awesome-icon icon="fa-solid fa-shop" class="icon" />
-              <!--<img src="https://storage.googleapis.com/download/storage/v1/b/topfoodnow-images-bucket/o/recommend-images%2F1753776651138_1753709474244.jpg?generation=1753776651566330&alt=media" alt="store" />-->
+              <img v-if="store.photoUrl" :src="store.photoUrl" alt="store" />
+              <font-awesome-icon v-else icon="fa-solid fa-shop" class="icon" />
             </div>
-            <p class="store-name">Store Name {{ i }}</p>
+            <h3 class="store-name">{{ store.name }}</h3>
             <div class="store-star">
-              <font-awesome-icon icon="fa-solid fa-star" />
-              <font-awesome-icon icon="fa-regular fa-star" />
+              <font-awesome-icon v-for="n in Math.floor(store.averageScore)" :key="'solid-' + store.id + '-' + n" icon="fa-solid fa-star" />
+              <font-awesome-icon v-if="store.averageScore % 1 >= 0.5" icon="fa-solid fa-star-half-stroke" />
+              <font-awesome-icon v-for="n in (5 - Math.ceil(store.averageScore))" :key="'regular-' + store.id + '-' + n" icon="fa-regular fa-star" />
             </div>
           </div>
         </div>
