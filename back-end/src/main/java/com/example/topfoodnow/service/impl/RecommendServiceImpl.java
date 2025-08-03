@@ -3,6 +3,7 @@ package com.example.topfoodnow.service.impl;
 import com.example.topfoodnow.dto.RecommendRequestDTO;
 import com.example.topfoodnow.dto.RecommendResponseDTO;
 import com.example.topfoodnow.dto.RecommendCreateRequestDTO;
+import com.example.topfoodnow.dto.CategoryDTO;
 import com.example.topfoodnow.model.RecommendModel;
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.model.StoreModel;
@@ -12,13 +13,16 @@ import com.example.topfoodnow.repository.StoreRepository;
 import com.example.topfoodnow.repository.CategoryRepository;
 import com.example.topfoodnow.service.GcsService;
 import com.example.topfoodnow.service.RecommendService;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.criteria.*;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
@@ -26,6 +30,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.io.IOException;
 
@@ -49,32 +54,103 @@ public class RecommendServiceImpl implements RecommendService {
     private RecommendResponseDTO convertToResponseDTO(RecommendModel recommendModel) {
         RecommendResponseDTO dto = new RecommendResponseDTO();
         dto.setId(recommendModel.getId());
-        dto.setUserId(recommendModel.getUser().getId());
-        dto.setStoreId(recommendModel.getStore().getId());
-        dto.setStoreName(recommendModel.getStore().getName());
-        dto.setStoreAddress(recommendModel.getStore().getAddress());
         dto.setReason(recommendModel.getReason());
         dto.setScore(recommendModel.getScore());
         dto.setCreatedAt(recommendModel.getCreatedAt());
 
-        if (recommendModel.getCategories() != null) {
+        if (recommendModel.getUser() != null) {
+            dto.setUserId(recommendModel.getUser().getId());
+        }
+
+        if (recommendModel.getStore() != null) {
+            dto.setStoreId(recommendModel.getStore().getId());
+            dto.setStoreName(recommendModel.getStore().getName());
+            dto.setStoreAddress(recommendModel.getStore().getAddress());
+        }
+
+        if (recommendModel.getCategories() != null && !recommendModel.getCategories().isEmpty()) {
+            // 假設 RecommendResponseDTO 中是 List<String> categoryNames
             dto.setCategoryNames(recommendModel.getCategories().stream()
                     .map(CategoryModel::getCategoryName)
                     .collect(Collectors.toList()));
+            // 如果是 Set<CategoryDTO> categories，則用下面這段
+            /*
+            Set<CategoryDTO> categoryDTOs = recommendModel.getCategories().stream()
+                    .map(category -> new CategoryDTO(category.getId(), category.getCategoryName()))
+                    .collect(Collectors.toSet());
+            dto.setCategories(categoryDTOs);
+            */
         } else {
-            dto.setCategoryNames(new ArrayList<>());
+            dto.setCategoryNames(new ArrayList<>()); // 或 dto.setCategories(new HashSet<>());
         }
 
-        // 新增：處理推薦首圖，取 photoUrls 列表中的第一個
         if (recommendModel.getPhotoUrls() != null && !recommendModel.getPhotoUrls().isEmpty()) {
             dto.setPhotoUrl(recommendModel.getPhotoUrls().get(0));
         } else {
-            dto.setPhotoUrl(null); // 或者設置一個預設圖片 URL
+            dto.setPhotoUrl(null);
         }
 
         return dto;
     }
 
+    @Override
+    @Transactional
+    public Page<RecommendResponseDTO> findAllRecommendsPaged(Pageable pageable, String searchTerm) {
+        Specification<RecommendModel> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> finalPredicates = new ArrayList<>(); // 用於存放每個關鍵字的 OR 組合條件
+
+            // 為了避免 N+1 問題，預加載關聯實體
+            root.fetch("user", JoinType.INNER);
+            root.fetch("store", JoinType.INNER);
+
+            if (StringUtils.hasText(searchTerm)) {
+                String[] keywords = searchTerm.toLowerCase().split("\\s+");
+
+                for (String keyword : keywords) {
+                    // 對於每個關鍵字，創建一個包含所有可能匹配字段的 OR 條件
+                    Predicate currentKeywordOrPredicate = criteriaBuilder.or(
+                            criteriaBuilder.like(criteriaBuilder.lower(root.get("user").<String>get("name")), "%" + keyword + "%"),
+                            criteriaBuilder.like(criteriaBuilder.lower(root.get("store").<String>get("name")), "%" + keyword + "%"),
+                            criteriaBuilder.like(criteriaBuilder.lower(root.get("store").<String>get("address")), "%" + keyword + "%"),
+                            criteriaBuilder.like(criteriaBuilder.lower(root.get("reason")), "%" + keyword + "%")
+                    );
+
+                    // 針對分類的處理：檢查推薦的 categories 集合中是否存在符合條件的 category
+                    Subquery<Integer> categorySubquery = query.subquery(Integer.class);
+                    Root<RecommendModel> subRoot = categorySubquery.from(RecommendModel.class);
+                    Join<RecommendModel, CategoryModel> categoryJoin = subRoot.join("categories", JoinType.LEFT);
+                    categorySubquery.select(subRoot.get("id"))
+                            .where(criteriaBuilder.and(
+                                    criteriaBuilder.equal(subRoot.get("id"), root.get("id")),
+                                    criteriaBuilder.like(criteriaBuilder.lower(categoryJoin.get("categoryName")), "%" + keyword + "%")
+                            ));
+                    Predicate categoryExistsPredicate = criteriaBuilder.exists(categorySubquery);
+
+                    // 將當前關鍵字的基礎 OR 條件 和 分類 EXISTS 條件進行 OR 組合
+                    Predicate combinedOrForCurrentKeyword = criteriaBuilder.or(currentKeywordOrPredicate, categoryExistsPredicate);
+
+                    // 將這個組合條件添加到最終的 Predicates 列表中 (這裡的列表中的每個元素都是一個關鍵字的大 OR 條件)
+                    finalPredicates.add(combinedOrForCurrentKeyword);
+                }
+                // 當 searchTerm 不為空時，我們使用 OR 來組合所有關鍵字的條件
+                // 這表示只要滿足任一關鍵字的條件即可被找到
+                return criteriaBuilder.or(finalPredicates.toArray(new Predicate[0]));
+
+            } else {
+                // 當 searchTerm 為空時，返回一個永遠為真的條件，以獲取所有數據
+                return criteriaBuilder.conjunction();
+            }
+        };
+
+        Page<RecommendModel> recommendModelsPage = recommendRepository.findAll(spec, pageable);
+
+        List<RecommendResponseDTO> content = recommendModelsPage.getContent().stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(content, pageable, recommendModelsPage.getTotalElements());
+    }
+    
     @Override
     @Transactional
     public RecommendResponseDTO addRecommend(RecommendCreateRequestDTO requestDTO, List<String> uploadedPhotoUrls, UserModel currentUserModel) {
@@ -235,11 +311,6 @@ public class RecommendServiceImpl implements RecommendService {
         long remainingRecommendsCount = recommendRepository.countByStoreId(storeId);
 
         if (remainingRecommendsCount == 0) {
-            // 如果沒有其他推薦與此店家關聯，則刪除店家
-            // 由於 StoreModel 中的 recommends 集合上設置了 CascadeType.ALL 和 orphanRemoval = true，
-            // 刪除 StoreModel 時會自動處理其所有關聯的 RecommendModel。
-            // 但在這裡，我們已經手動刪除了最後一個 RecommendModel，所以直接刪除 StoreModel 即可。
-            // 由於 StoreModel 不再直接管理圖片 URL，也不需要在此處調用 gcsService 進行額外圖片刪除。
             storeRepository.delete(store);
             logger.info("店家 ID: {} 已沒有任何推薦，已連同店家一併刪除。", storeId);
         }
@@ -247,6 +318,7 @@ public class RecommendServiceImpl implements RecommendService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public List<RecommendResponseDTO> getRecommendsByUserId(Integer userId) {
         List<RecommendModel> recommends = recommendRepository.findByUserId(userId);
         return recommends.stream()
@@ -255,23 +327,14 @@ public class RecommendServiceImpl implements RecommendService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<RecommendResponseDTO> getRecommendByUserAndStoreId(Integer userId, Integer storeId) {
         Optional<RecommendModel> recommendOptional = recommendRepository.findByUserIdAndStoreId(userId, storeId);
         return recommendOptional.map(this::convertToResponseDTO);
     }
 
     @Override
-    public Page<RecommendResponseDTO> findAllRecommendsPaged(Pageable pageable, String searchTerm) {
-        Page<RecommendModel> recommendModelsPage = recommendRepository.findFilteredRecommendsWithUserAndStoreAndCategories(searchTerm, pageable);
-
-        List<RecommendResponseDTO> content = recommendModelsPage.getContent().stream()
-                .map(this::convertToResponseDTO)
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(content, pageable, recommendModelsPage.getTotalElements());
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public List<RecommendResponseDTO> getRecommendsByStoreId(Integer storeId) {
         List<RecommendModel> recommends = recommendRepository.findByStoreId(storeId);
         return recommends.stream()

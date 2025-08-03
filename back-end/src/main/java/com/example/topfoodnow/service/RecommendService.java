@@ -1,8 +1,8 @@
 package com.example.topfoodnow.service;
 
-import com.example.topfoodnow.dto.RecommendCreateRequestDTO;
 import com.example.topfoodnow.dto.RecommendRequestDTO;
 import com.example.topfoodnow.dto.RecommendResponseDTO;
+import com.example.topfoodnow.dto.RecommendCreateRequestDTO;
 import com.example.topfoodnow.model.UserModel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
