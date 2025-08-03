@@ -14,7 +14,7 @@ export default {
       '2xl': '1400px'
     },
     fontSize: {
-      xxs: '0.6rem',
+      xxs: '0.65rem',
       xs: '0.75rem',
       sm: '0.875rem',
       base: '1rem',
@@ -82,7 +82,7 @@ export default {
         // 在@apply是用font-fontAwesome
       },
       boxShadow: {
-        primary: '0 0 4px 2px rgba(235, 155, 75, .25)',
+        primary: '0 0 8px 4px rgba(235, 155, 75, .25)',
         danger: '0 0 4px 2px rgba(219, 58, 51, .25)',
         secondary: '0 0 4px 2px rgba(66, 133, 247, .25)',
         gray: '0 0 4px 2px rgba(128, 128, 128, .25)'

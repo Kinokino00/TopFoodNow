@@ -1,6 +1,6 @@
 export interface Store {
     id: number
-    name: string
-    averageScore: number
+    storeName: string
+    score: number
     photoUrl: string
 }

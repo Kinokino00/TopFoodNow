@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import auth from './auth'
+import search from './search'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,6 +15,7 @@ const router = createRouter({
       },
     },
     ...auth,
+    ...search,
     {
       path: '/cc',
       name: 'componentPage',
@@ -40,6 +42,7 @@ router.beforeEach(async (to, from, next) => {
   // } catch {
   //   next({ name: 'Login' })
   // }
+  next()
 })
 
 export default router

@@ -6,7 +6,10 @@
         class="peer"
         :checked="state.checkboxState.modelValue"
         :id="state.checkboxState.id || state.checkboxState.name"
-        :disabled="state.checkboxState.disabledName === state.checkboxState.name || state.checkboxState.disabled"
+        :disabled="
+          state.checkboxState.disabledName === state.checkboxState.name ||
+          state.checkboxState.disabled
+        "
         @change="handleCheckboxChange"
       />
       <span class="peer-checked:!opacity-100">
@@ -38,14 +41,13 @@
   </div>
 </template>
 
-
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from 'vue'
 
 export type CheckboxState = {
   modelValue: boolean
   name: string
-  id?: string
+  id?: string | number
   labelTextClass?: string
   disabledName?: string
   disabled?: boolean
@@ -55,10 +57,10 @@ const props = defineProps<{ checkboxState: CheckboxState }>()
 const state: any = reactive({
   checkboxState: props.checkboxState,
   getCheckBoxClass: computed(() => ({
-    'checkboxRadioError': state.checkboxState.isError
+    checkboxRadioError: state.checkboxState.isError
   }))
 })
-watchEffect(() => state.checkboxState = props.checkboxState)
+watchEffect(() => (state.checkboxState = props.checkboxState))
 
 const emit = defineEmits(['update:modelValue'])
 const handleCheckboxChange = () => {
@@ -66,7 +68,6 @@ const handleCheckboxChange = () => {
   emit('update:modelValue', state.checkboxState.modelValue)
 }
 </script>
-
 
 <style lang="scss" scoped>
 @import '@/assets/style/checkboxRadio.scss';

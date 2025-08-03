@@ -1,14 +1,14 @@
 .inputDiv {
   @apply flex items-center justify-between cursor-pointer;
   .input[readonly] {
-    @apply cursor-pointer;
+    @apply cursor-auto;
   }
 }
 .button {
   &-arrow {
     @apply relative;
     &:after {
-      @apply content-['\f078'] absolute right-0 -translate-y-1/2 py-1.5 px-2 bg-white font-fontAwesome font-black text-xs text-gray-600 leading-4 rounded-lg;
+      @apply content-['\f078'] absolute -right-2 -translate-y-1/2 py-1.5 px-2 bg-white font-fontAwesome font-black text-xs text-gray-600 leading-4 rounded-lg;
     }
   }
 }
@@ -22,7 +22,7 @@
 }
 .option {
   &-container {
-    @apply absolute z-10 p-2 bg-white border border-gray-200 rounded-lg;
+    @apply absolute z-10 p-1 bg-white border border-gray-200 rounded-lg md:p-2;
   }
   &-item {
     @apply p-1.5;

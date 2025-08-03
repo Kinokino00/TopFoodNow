@@ -1,7 +1,7 @@
 .checkBoxItems {
   @apply flex items-center py-1 min-w-fit;
   .labelText {
-    @apply pl-2;
+    @apply pl-2 text-xs md:text-sm;
   }
 }
 .checkboxRadio {

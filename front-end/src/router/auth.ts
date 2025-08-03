@@ -6,8 +6,8 @@ const auth: RouteRecordRaw[] = [
         name: 'Login',
         component: () => import('@/views/auth/LoginPage.vue'),
         meta: {
-        title: '登入',
-        requiresAuth: false
+            title: '登入',
+            requiresAuth: false
         }
     },
     {
@@ -15,8 +15,8 @@ const auth: RouteRecordRaw[] = [
         name: 'Register',
         component: () => import('@/views/auth/RegisterPage.vue'),
         meta: {
-        title: '註冊',
-        requiresAuth: false
+            title: '註冊',
+            requiresAuth: false
         }
     }
 ]
