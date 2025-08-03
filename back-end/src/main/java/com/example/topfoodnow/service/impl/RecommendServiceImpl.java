@@ -3,7 +3,6 @@ package com.example.topfoodnow.service.impl;
 import com.example.topfoodnow.dto.RecommendRequestDTO;
 import com.example.topfoodnow.dto.RecommendResponseDTO;
 import com.example.topfoodnow.dto.RecommendCreateRequestDTO;
-import com.example.topfoodnow.dto.StoreWithAvgScoreDTO;
 import com.example.topfoodnow.model.RecommendModel;
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.model.StoreModel;
@@ -14,16 +13,14 @@ import com.example.topfoodnow.repository.CategoryRepository;
 import com.example.topfoodnow.service.GcsService;
 import com.example.topfoodnow.service.RecommendService;
 import jakarta.persistence.EntityNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
@@ -60,13 +57,19 @@ public class RecommendServiceImpl implements RecommendService {
         dto.setScore(recommendModel.getScore());
         dto.setCreatedAt(recommendModel.getCreatedAt());
 
-        // 處理分類名稱
         if (recommendModel.getCategories() != null) {
             dto.setCategoryNames(recommendModel.getCategories().stream()
-                    .map(CategoryModel::getName)
+                    .map(CategoryModel::getCategoryName)
                     .collect(Collectors.toList()));
         } else {
             dto.setCategoryNames(new ArrayList<>());
+        }
+
+        // 新增：處理推薦首圖，取 photoUrls 列表中的第一個
+        if (recommendModel.getPhotoUrls() != null && !recommendModel.getPhotoUrls().isEmpty()) {
+            dto.setPhotoUrl(recommendModel.getPhotoUrls().get(0));
+        } else {
+            dto.setPhotoUrl(null); // 或者設置一個預設圖片 URL
         }
 
         return dto;
@@ -99,26 +102,22 @@ public class RecommendServiceImpl implements RecommendService {
         recommend.setReason(requestDTO.getReason());
         recommend.setScore(requestDTO.getScore());
         recommend.setCreatedAt(LocalDateTime.now());
-        recommend.setPhotoUrls(uploadedPhotoUrls); // 將 Controller 傳來的 GCS URL 列表設置到 RecommendModel
+        recommend.setPhotoUrls(uploadedPhotoUrls);
 
         // 處理分類 ID
         if (requestDTO.getCategoryIds() != null && !requestDTO.getCategoryIds().isEmpty()) {
             List<CategoryModel> categoriesList = categoryRepository.findAllById(requestDTO.getCategoryIds());
             if (categoriesList.size() != requestDTO.getCategoryIds().size()) {
-                // 如果查詢回來的分類數量不匹配請求的數量，說明有無效 ID
                 throw new IllegalArgumentException("部分分類ID無效。");
             }
             // 將 List 轉換為 Set 設置給 RecommendModel
             recommend.setCategories(new HashSet<>(categoriesList));
         } else {
-            recommend.setCategories(new HashSet<>()); // 沒有分類則設置為空 Set
+            recommend.setCategories(new HashSet<>());
         }
 
-        // 保存推薦
         recommend = recommendRepository.save(recommend);
         logger.info("成功為用戶 ID: {} 新增推薦，店家ID: {}", currentUserModel.getId(), store.getId());
-
-        // 轉換為響應 DTO 並返回
         return convertToResponseDTO(recommend);
     }
 
@@ -262,22 +261,8 @@ public class RecommendServiceImpl implements RecommendService {
     }
 
     @Override
-    public Page<RecommendResponseDTO> findAllRecommendsPaged(int page, int size, String[] sort) {
-        Sort springSort = Sort.unsorted();
-        if (sort != null && sort.length > 0) {
-            try {
-                String property = sort[0];
-                Sort.Direction direction = Sort.Direction.ASC;
-                if (sort.length > 1 && sort[1].equalsIgnoreCase("desc")) {
-                    direction = Sort.Direction.DESC;
-                }
-                springSort = Sort.by(direction, property);
-            } catch (Exception e) {
-                logger.warn("解析排序參數失敗，使用預設排序。錯誤: {}", e.getMessage());
-            }
-        }
-        Pageable pageable = PageRequest.of(page, size, springSort);
-        Page<RecommendModel> recommendModelsPage = recommendRepository.findFilteredRecommendsWithUserAndStoreAndCategories("", pageable);
+    public Page<RecommendResponseDTO> findAllRecommendsPaged(Pageable pageable, String searchTerm) {
+        Page<RecommendModel> recommendModelsPage = recommendRepository.findFilteredRecommendsWithUserAndStoreAndCategories(searchTerm, pageable);
 
         List<RecommendResponseDTO> content = recommendModelsPage.getContent().stream()
                 .map(this::convertToResponseDTO)

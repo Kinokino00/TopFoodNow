@@ -3,9 +3,9 @@ package com.example.topfoodnow.service;
 import com.example.topfoodnow.dto.RecommendCreateRequestDTO;
 import com.example.topfoodnow.dto.RecommendRequestDTO;
 import com.example.topfoodnow.dto.RecommendResponseDTO;
-import com.example.topfoodnow.dto.StoreWithAvgScoreDTO;
 import com.example.topfoodnow.model.UserModel;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 import java.io.IOException;
@@ -34,7 +34,7 @@ public interface RecommendService {
 
     Optional<RecommendResponseDTO> getRecommendByUserAndStoreId(Integer userId, Integer storeId);
 
-    Page<RecommendResponseDTO> findAllRecommendsPaged(int page, int size, String[] sort);
+    Page<RecommendResponseDTO> findAllRecommendsPaged(Pageable pageable, String searchTerm);
 
     List<RecommendResponseDTO> getRecommendsByStoreId(Integer storeId);
 }

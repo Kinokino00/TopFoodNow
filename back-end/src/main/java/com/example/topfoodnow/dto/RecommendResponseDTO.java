@@ -36,4 +36,7 @@ public class RecommendResponseDTO {
     @Schema(description = "推薦創建時間")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @Schema(description = "推薦的首張圖片URL")
+    private String photoUrl;
 }

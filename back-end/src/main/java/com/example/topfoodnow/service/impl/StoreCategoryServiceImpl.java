@@ -192,7 +192,7 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
             dto.setStoreName(model.getStore().getName());
         }
         if (model.getCategory() != null) {
-            dto.setCategoryName(model.getCategory().getName());
+            dto.setCategoryName(model.getCategory().getCategoryName());
         }
         return dto;
     }
@@ -201,7 +201,7 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
     private CategoryDTO convertToCategoryDTO(CategoryModel model) {
         CategoryDTO dto = new CategoryDTO();
         dto.setId(model.getId());
-        dto.setName(model.getName());
+        dto.setCategoryName(model.getCategoryName());
         return dto;
     }
 }

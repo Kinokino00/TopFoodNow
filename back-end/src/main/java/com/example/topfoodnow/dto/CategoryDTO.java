@@ -12,10 +12,10 @@ public class CategoryDTO {
     private Integer id;
 
     @Schema(description = "分類名稱", example = "中式料理")
-    private String name;
+    private String categoryName;
 
-    public CategoryDTO(Integer id, String name) {
+    public CategoryDTO(Integer id, String categoryName) {
         this.id = id;
-        this.name = name;
+        this.categoryName = categoryName;
     }
 }

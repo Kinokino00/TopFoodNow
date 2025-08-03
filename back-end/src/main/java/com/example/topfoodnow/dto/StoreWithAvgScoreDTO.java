@@ -14,18 +14,18 @@ public class StoreWithAvgScoreDTO {
     private Integer id;
 
     @Schema(description = "店家名稱", example = "好吃餐廳")
-    private String name;
+    private String storeName;
 
     @Schema(description = "店家平均評分", example = "4")
-    private Integer averageScore;
+    private Integer score;
 
     @Schema(description = "店家最新推薦首圖", example = "https://url")
     private String photoUrl;
 
-    public StoreWithAvgScoreDTO(Integer id, String name, Integer averageScore) {
+    public StoreWithAvgScoreDTO(Integer id, String storeName, Integer score) {
         this.id = id;
-        this.name = name;
-        this.averageScore = averageScore;
+        this.storeName = storeName;
+        this.score = score;
         this.photoUrl = null;
     }
 }

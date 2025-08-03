@@ -21,8 +21,9 @@ public class CategoryModel {
     @Schema(description = "餐廳類別ID", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private Integer id;
 
-    @Column(nullable = false, unique = true)
-    private String name;
+    @Column(name = "name", nullable = false, unique = true)
+    @Schema(name = "categoryName", description = "餐廳類別名稱", example = "中式料理")
+    private String categoryName;
 
     // 多對多關聯到 RecommendModel
     @ManyToMany(mappedBy = "categories", fetch = FetchType.LAZY)

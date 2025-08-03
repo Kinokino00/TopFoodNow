@@ -22,13 +22,16 @@ public class CustomPageResponseDTO<T> {
     @Data
     @Schema(description = "分頁")
     public static class CustomPageableInfo {
-        @Schema(description = "當前頁碼")
+        @Schema(description = "當前頁碼", example = "1")
         private int pageNumber;
 
-        @Schema(description = "每頁大小")
+        @Schema(description = "每頁大小", example = "10")
         private int pageSize;
 
-        @Schema(description = "排序")
-        private String sort; // 例如: "id: ASC", "name: DESC"
+        @Schema(description = "排序欄位名稱", example = "id")
+        private String sortBy;
+
+        @Schema(description = "排序方式 (ASC/DESC)", example = "ASC")
+        private String sortOrder;
     }
 }

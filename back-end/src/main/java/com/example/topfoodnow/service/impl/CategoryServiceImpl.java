@@ -20,7 +20,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(readOnly = true)
     public List<CategoryDTO> getAllCategories() {
-        return categoryRepository.findAll().stream()
+        return categoryRepository.findAllByOrderByIdAsc().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -34,8 +34,8 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
-        if (categoryRepository.findByName(categoryDTO.getName()).isPresent()) {
-            throw new IllegalArgumentException("分類名稱已存在：" + categoryDTO.getName());
+        if (categoryRepository.findByCategoryName(categoryDTO.getCategoryName()).isPresent()) {
+            throw new IllegalArgumentException("分類名稱已存在：" + categoryDTO.getCategoryName());
         }
         CategoryModel category = convertToEntity(categoryDTO);
         category.setId(null);
@@ -48,12 +48,12 @@ public class CategoryServiceImpl implements CategoryService {
         CategoryModel existingCategory = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("分類未找到，ID: " + id));
 
-        if (!existingCategory.getName().equals(categoryDTO.getName()) &&
-                categoryRepository.findByName(categoryDTO.getName()).isPresent()) {
-            throw new IllegalArgumentException("分類名稱已存在：" + categoryDTO.getName());
+        if (!existingCategory.getCategoryName().equals(categoryDTO.getCategoryName()) &&
+                categoryRepository.findByCategoryName(categoryDTO.getCategoryName()).isPresent()) {
+            throw new IllegalArgumentException("分類名稱已存在：" + categoryDTO.getCategoryName());
         }
 
-        existingCategory.setName(categoryDTO.getName());
+        existingCategory.setCategoryName(categoryDTO.getCategoryName());
         return convertToDto(categoryRepository.save(existingCategory));
     }
 
@@ -69,14 +69,14 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryDTO convertToDto(CategoryModel model) {
         CategoryDTO dto = new CategoryDTO();
         dto.setId(model.getId());
-        dto.setName(model.getName());
+        dto.setCategoryName(model.getCategoryName());
         return dto;
     }
 
     private CategoryModel convertToEntity(CategoryDTO dto) {
         CategoryModel entity = new CategoryModel();
         entity.setId(dto.getId());
-        entity.setName(dto.getName());
+        entity.setCategoryName(dto.getCategoryName());
         return entity;
     }
 }

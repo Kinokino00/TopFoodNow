@@ -28,8 +28,8 @@ public class CategoryController {
         this.categoryService = categoryService;
     }
 
-    // region 取得所有店家分類
-    @Operation(summary = "取得所有店家分類")
+    // region 取得所有分類
+    @Operation(summary = "取得所有分類")
     @ApiResponse(responseCode = "200", description = "成功取得分類列表")
     @GetMapping
     public ResponseEntity<List<CategoryDTO>> getAllCategories() {
@@ -69,7 +69,7 @@ public class CategoryController {
     public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
         try {
             CategoryDTO createdCategory = categoryService.createCategory(categoryDTO);
-            logger.info("成功新增分類: {}", createdCategory.getName());
+            logger.info("成功新增分類: {}", createdCategory.getCategoryName());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdCategory);
         } catch (IllegalArgumentException e) {
             logger.error("新增分類失敗: {}", e.getMessage());

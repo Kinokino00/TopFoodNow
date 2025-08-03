@@ -27,13 +27,11 @@ public class StoreServiceImpl implements StoreService {
 
         return randomStores.stream().map(store -> {
             // 從 repository 獲取原始的 Double 平均分數
-            Integer averageScore = recommendRepository.findAverageScoreByStoreId(store.getId());
+            Double averageScore = recommendRepository.findAverageScoreByStoreId(store.getId());
 
             // 處理平均分數：如果為 null 則設為 0，然後四捨五入取整為 Integer
             Integer finalAverageScore = (averageScore != null) ? (int) Math.round(averageScore) : 0;
-            // 注意：Math.round(double) 返回 long，需要強制轉型為 int。
-            // 如果平均分範圍可能超過 Integer.MAX_VALUE，則需考慮 Long。但評分通常不會。
-
+            // Math.round(double) 返回 long，需要強制轉型為 int
 
             String latestPhotoUrl = null;
             Optional<RecommendModel> latestRecommend = recommendRepository.findTopByStoreIdOrderByCreatedAtDesc(store.getId());

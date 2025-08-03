@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.util.StringUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -84,42 +85,46 @@ public class RecommendController {
     public ResponseEntity<CustomPageResponseDTO<RecommendResponseDTO>> getAllRecommends(
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam(defaultValue = "id,asc") String[] sort
+        @RequestParam(defaultValue = "id") String sortBy,
+        @RequestParam(defaultValue = "asc") String sortOrder,
+        @RequestParam(required = false) String searchTerm
     ) {
-        logger.info("請求取得所有餐廳推薦，頁碼: {}, 大小: {}, 排序: {}", page, size, sort);
+        logger.info("請求取得所有餐廳推薦，頁碼: {}, 大小: {}, 排序欄位: {}, 排序方式: {}", page, size, sortBy, sortOrder);
         int springPage = page - 1;
         if (springPage < 0) {
             springPage = 0;
         }
 
-        Sort springSort = Sort.unsorted();
-        if (sort.length > 0) {
-            try {
-                String property = sort[0];
-                Sort.Direction direction = Sort.Direction.ASC;
-                if (sort.length > 1 && sort[1].equalsIgnoreCase("desc")) {
-                    direction = Sort.Direction.DESC;
-                }
-                springSort = Sort.by(direction, property);
-            } catch (Exception e) {
-                logger.warn("解析排序參數失敗，使用預設排序。錯誤: {}", e.getMessage());
-            }
+        Sort springSort;
+        try {
+            Sort.Direction direction = Sort.Direction.fromString(sortOrder.toUpperCase());
+            springSort = Sort.by(direction, sortBy);
+        } catch (IllegalArgumentException e) {
+            logger.warn("解析排序參數失敗，使用預設排序 (id, asc)。錯誤: {}", e.getMessage());
+            springSort = Sort.by(Sort.Direction.ASC, "id");
         }
 
         Pageable pageable = PageRequest.of(springPage, size, springSort);
 
-        // 這裡調用 service 層獲取 Page<RecommendResponseDTO>
-        Page<RecommendResponseDTO> recommendPage = recommendService.findAllRecommendsPaged(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        Page<RecommendResponseDTO> recommendPage = recommendService.findAllRecommendsPaged(pageable, searchTerm);
 
         CustomPageResponseDTO<RecommendResponseDTO> response = new CustomPageResponseDTO<>();
-        response.setData(recommendPage.getContent()); // <-- 將 setContent 改為 setData
+        response.setData(recommendPage.getContent());
         response.setTotalElements(recommendPage.getTotalElements());
         response.setTotalPages(recommendPage.getTotalPages());
 
         CustomPageResponseDTO.CustomPageableInfo pageableInfo = new CustomPageResponseDTO.CustomPageableInfo();
         pageableInfo.setPageNumber(recommendPage.getNumber() + 1);
         pageableInfo.setPageSize(recommendPage.getSize());
-        pageableInfo.setSort(springSort.isSorted() ? springSort.toString() : "unsorted");
+
+        if (springSort.isSorted()) {
+            Sort.Order order = springSort.iterator().next();
+            pageableInfo.setSortBy(order.getProperty());
+            pageableInfo.setSortOrder(order.getDirection().name());
+        } else {
+            pageableInfo.setSortBy("id");
+            pageableInfo.setSortOrder("ASC");
+        }
 
         response.setPageable(pageableInfo);
         return ResponseEntity.ok(response);

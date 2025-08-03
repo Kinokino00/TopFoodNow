@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +15,7 @@ public interface StoreRepository extends JpaRepository<StoreModel, Integer> {
 
     boolean existsById(Integer id);
 
-    @Query(value = "SELECT new com.example.topfoodnow.dto.StoreWithAvgScoreDTO(s.id, s.name, CAST(AVG(r.score) AS int)) " + // <-- 這裡改為 CAST(AVG(r.score) AS int)
+    @Query(value = "SELECT new com.example.topfoodnow.dto.StoreWithAvgScoreDTO(s.id, s.name, CAST(AVG(r.score) AS int)) " +
             "FROM StoreModel s JOIN RecommendModel r ON s.id = r.store.id " +
             "GROUP BY s.id, s.name " +
             "ORDER BY FUNCTION('RAND')")
