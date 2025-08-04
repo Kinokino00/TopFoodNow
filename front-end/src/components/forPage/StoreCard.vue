@@ -1,6 +1,6 @@
 <template>
   <div class="store-container flex-col" :class="props.isShort ? 'gap-3 pb-3' : 'pb-2'">
-    <div class="store-image">
+    <div class="store-image cursor-pointer" @click="goToRecommendationDetail">
       <template v-if="!props.isShort">
         <p class="store-date">
           {{ itemData.createdAt ? itemData.createdAt.split(' ')[0] : '' }}
@@ -19,7 +19,16 @@
         </div>
       </template>
 
-      <img v-if="itemData.photoUrl" :src="itemData.photoUrl" :alt="itemData.storeName" />
+      <img
+        v-if="props.isShort && itemData.photoUrl"
+        :src="itemData.photoUrl"
+        :alt="itemData.storeName"
+      />
+      <img
+        v-else-if="itemData.photoUrls && itemData.photoUrls.length"
+        :src="itemData.photoUrls[0]"
+        :alt="itemData.storeName"
+      />
       <font-awesome-icon v-else icon="fa-solid fa-shop" class="icon" />
     </div>
 
@@ -40,7 +49,7 @@
       <p class="text-more-line mx-2">{{ itemData.reason }}</p>
     </template>
 
-    <div v-else class="store-star">
+    <div v-else class="store-star !relative !left-0">
       <font-awesome-icon
         v-for="sc in Math.floor(itemData.score || 0)"
         :key="'solid-' + itemData.id + '-' + sc"
@@ -56,11 +65,16 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+
 interface GenericStoreCardData {
   id: string | number
+  userId: number
+  storeId?: number
   createdAt?: string
   score?: number
   photoUrl?: string | null
+  photoUrls?: string | null
   storeName?: string
   categoryNames?: string[]
   reason?: string
@@ -70,4 +84,21 @@ const props = defineProps<{
   itemData: GenericStoreCardData
   isShort?: boolean
 }>()
+
+const router = useRouter()
+
+// 導航到推薦詳細頁面
+const goToRecommendationDetail = () => {
+  if (props.itemData.userId && props.itemData.storeId) {
+    router.push({
+      name: 'recommendationDetail',
+      params: {
+        userId: props.itemData.userId,
+        storeId: props.itemData.storeId
+      }
+    })
+  } else {
+    console.warn('User ID or Store ID is missing, cannot navigate to detail page.')
+  }
+}
 </script>

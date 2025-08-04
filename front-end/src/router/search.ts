@@ -1,6 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-const auth: RouteRecordRaw[] = [
+const search: RouteRecordRaw[] = [
     {
         path: '/search',
         name: 'searchList',
@@ -10,6 +10,16 @@ const auth: RouteRecordRaw[] = [
             requiresAuth: false
         }
     },
+    {
+        path: '/recommendations/:userId/:storeId',
+        name: 'recommendationDetail',
+        component: () => import('@/views/search/RecommendationDetail.vue'),
+        props: true,
+        meta: {
+            title: '推薦詳細資訊',
+            requiresAuth: false
+        }
+    }
 ]
 
-export default auth
+export default search

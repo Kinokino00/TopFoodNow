@@ -64,3 +64,10 @@
     @apply px-1 py-0.5 text-primary-500 border border-primary-500 rounded-full;
   }
 }
+
+.loading, .error {
+  @apply text-center;
+}
+.error {
+  @apply text-danger-600;
+}

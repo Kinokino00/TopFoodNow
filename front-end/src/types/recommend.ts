@@ -1,6 +1,7 @@
 export interface RecommendItem {
     id: number
     userId: number
+    userName: string
     storeId: number
     storeName: string
     storeAddress: string
@@ -8,7 +9,7 @@ export interface RecommendItem {
     score: number
     categoryNames: string[]
     createdAt: string
-    photoUrl?: string
+    photoUrls?: string | null
 }
 
 export interface Pageable {

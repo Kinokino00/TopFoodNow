@@ -1,28 +1,14 @@
 <template>
   <div>
-    <div
-      :class="[
-        'component-' + state.getLayout,
-        state.textareaState.width
-      ]"
-    >
-      <p
-        v-if="state.textareaState.label"
-        class="labelText"
-        :class="state.getLabelClass"
-      >
+    <div :class="['component-' + state.getLayout, state.textareaState.width]">
+      <p v-if="state.textareaState.label" class="labelText" :class="state.getLabelClass">
         {{ state.textareaState.label }}
       </p>
-      <div
-        class="inputDiv !px-1"
-        :class="[
-          state.getClasses,
-          state.textareaState.inputDivClass
-        ]"
-      >
+      <div class="inputDiv !px-1" :class="[state.getClasses, state.textareaState.inputDivClass]">
         <textarea
           type="text"
           class="min-h-[70px]"
+          :class="state.textareaState.inputClass"
           :value="state.textareaState.modelValue"
           :placeholder="state.textareaState.placeholder ?? '請輸入'"
           @input="inputEmits"
@@ -46,14 +32,14 @@
 <script setup lang="ts">
 import { reactive, computed, watchEffect } from 'vue'
 
-
 export type TextareaState = {
   modelValue: string | number
-  layout?: string     // 預設 'col'
+  layout?: string // 預設 'col'
   width?: string
-  labelClass?: string  // 預設 'min-w-[100px]'
+  labelClass?: string // 預設 'min-w-[100px]'
   label?: string
   inputDivClass?: string
+  inputClass?: string
   placeholder?: string
   disabled?: boolean
   readonly?: boolean
@@ -77,7 +63,7 @@ const state: any = reactive({
     return labelClass ? `${labelClass} ${layoutRowClass}` : `${defaultClass} ${layoutRowClass}`
   })
 })
-watchEffect(() => state.inputState = props.textareaState)
+watchEffect(() => (state.inputState = props.textareaState))
 
 const inputEmits = (event: Event) => {
   const inputVal = (event.target as HTMLInputElement)?.value

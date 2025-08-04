@@ -16,7 +16,11 @@
           icon="fa-regular fa-star"
         />
       </div>
-      <img v-if="itemData.photoUrl" :src="itemData.photoUrl" :alt="itemData.storeName" />
+      <img
+        v-if="itemData.photoUrls && itemData.photoUrls.length"
+        :src="itemData.photoUrls[0]"
+        :alt="itemData.storeName"
+      />
       <font-awesome-icon v-else icon="fa-solid fa-shop" class="icon" />
     </div>
 
@@ -45,7 +49,7 @@ interface GenericStoreCardData {
   id: string | number
   createdAt?: string
   score?: number
-  photoUrl?: string | null
+  photoUrls?: string | null
   storeName?: string
   categoryNames?: string[]
   reason?: string

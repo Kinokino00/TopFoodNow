@@ -83,10 +83,8 @@
         class="py-1 pl-1 pr-3 md:max-h-[calc(100vh-212px)]"
         :class="isCategoryOpen ? 'max-h-[calc(100vh-648px)]' : 'max-h-[calc(100vh-308px)]'"
       >
-        <p v-if="loading" class="text-center">載入推薦中...</p>
-        <p v-if="error" class="text-center text-danger-600">
-          錯誤: {{ error.message || '無法載入推薦列表' }}
-        </p>
+        <p v-if="loading" class="loading">載入推薦中...</p>
+        <p v-if="error" class="error">錯誤: {{ error.message || '無法載入推薦列表' }}</p>
         <p v-else-if="!recommendations.length && !loading && !error" class="text-center">
           目前沒有推薦的餐廳
         </p>
