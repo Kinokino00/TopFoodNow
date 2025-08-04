@@ -3,7 +3,6 @@ package com.example.topfoodnow.service.impl;
 import com.example.topfoodnow.dto.RecommendRequestDTO;
 import com.example.topfoodnow.dto.RecommendResponseDTO;
 import com.example.topfoodnow.dto.RecommendCreateRequestDTO;
-import com.example.topfoodnow.dto.CategoryDTO;
 import com.example.topfoodnow.model.RecommendModel;
 import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.model.StoreModel;
@@ -60,6 +59,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         if (recommendModel.getUser() != null) {
             dto.setUserId(recommendModel.getUser().getId());
+            dto.setUserName(recommendModel.getUser().getName());
         }
 
         if (recommendModel.getStore() != null) {
@@ -69,25 +69,17 @@ public class RecommendServiceImpl implements RecommendService {
         }
 
         if (recommendModel.getCategories() != null && !recommendModel.getCategories().isEmpty()) {
-            // 假設 RecommendResponseDTO 中是 List<String> categoryNames
             dto.setCategoryNames(recommendModel.getCategories().stream()
                     .map(CategoryModel::getCategoryName)
                     .collect(Collectors.toList()));
-            // 如果是 Set<CategoryDTO> categories，則用下面這段
-            /*
-            Set<CategoryDTO> categoryDTOs = recommendModel.getCategories().stream()
-                    .map(category -> new CategoryDTO(category.getId(), category.getCategoryName()))
-                    .collect(Collectors.toSet());
-            dto.setCategories(categoryDTOs);
-            */
         } else {
-            dto.setCategoryNames(new ArrayList<>()); // 或 dto.setCategories(new HashSet<>());
+            dto.setCategoryNames(new ArrayList<>());
         }
 
         if (recommendModel.getPhotoUrls() != null && !recommendModel.getPhotoUrls().isEmpty()) {
-            dto.setPhotoUrl(recommendModel.getPhotoUrls().get(0));
+            dto.setPhotoUrls(new ArrayList<>(recommendModel.getPhotoUrls()));
         } else {
-            dto.setPhotoUrl(null);
+            dto.setPhotoUrls(new ArrayList<>());
         }
 
         return dto;
@@ -150,7 +142,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         return new PageImpl<>(content, pageable, recommendModelsPage.getTotalElements());
     }
-    
+
     @Override
     @Transactional
     public RecommendResponseDTO addRecommend(RecommendCreateRequestDTO requestDTO, List<String> uploadedPhotoUrls, UserModel currentUserModel) {

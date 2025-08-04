@@ -15,6 +15,9 @@ public class RecommendResponseDTO {
     @Schema(description = "推薦的用戶ID")
     private Integer userId;
 
+    @Schema(description = "用戶名稱")
+    private String userName;
+
     @Schema(description = "店家的唯一ID")
     private Integer storeId;
 
@@ -38,5 +41,5 @@ public class RecommendResponseDTO {
     private LocalDateTime createdAt;
 
     @Schema(description = "推薦的首張圖片URL")
-    private String photoUrl;
+    private List<String> photoUrls;
 }
