@@ -12,7 +12,15 @@
         {{ state.inputTextState.label }}
       </p>
       <div class="inputDiv" :class="[state.getClasses, state.inputTextState.inputDivClass]">
+        <RouterLink
+          v-if="state.inputTextState.readonly && state.inputTextState.userId"
+          :to="{ name: 'userRecommendations', params: { userId: state.inputTextState.userId } }"
+          class="text-secondary-700 cursor-pointer hover:underline"
+        >
+          {{ state.inputTextState.modelValue }}
+        </RouterLink>
         <input
+          v-else
           type="text"
           class="input"
           :class="state.inputTextState.inputClass"
@@ -55,6 +63,7 @@ export type InputTextState = {
   disabled?: boolean // 預設 false
   errorMessage?: string
   readonly?: boolean
+  userId?: number // 用戶 ID
   dataTestId?: string
 }
 const props = defineProps<{ inputTextState: InputTextState }>()

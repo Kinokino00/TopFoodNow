@@ -65,6 +65,7 @@
               class="input-layout"
               :inputTextState="{
                 modelValue: recommendation.userName,
+                userId: recommendation.userId,
                 layout: 'row',
                 label: '推薦用戶:',
                 labelClass: 'input-label',
@@ -93,7 +94,7 @@
             />
             <div class="input-layout component-row">
               <p class="labelText input-label">店家評分:</p>
-              <div class="store-star !relative !top-0 !left-0 py-2">
+              <div class="store-star !relative !top-0 !left-0 py-2 md:px-2">
                 <font-awesome-icon
                   v-for="sc in Math.floor(recommendation.score || 0)"
                   :key="'solid-' + recommendation.id + '-' + sc"
@@ -273,7 +274,7 @@ onMounted(async () => {
         @apply px-0 md:px-2;
       }
       .text-content {
-        @apply text-xs py-1 leading-[150%] sm:text-sm;
+        @apply text-xs py-1 leading-[150%] sm:text-sm md:px-2;
       }
     }
   }

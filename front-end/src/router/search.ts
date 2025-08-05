@@ -19,7 +19,17 @@ const search: RouteRecordRaw[] = [
             title: '推薦詳細資訊',
             requiresAuth: false
         }
-    }
+    },
+    {
+        path: '/user/:userId/recommendations',
+        name: 'userRecommendations',
+        component: () => import('@/views/search/UserRecommendations.vue'),
+        props: true,
+        meta: {
+            title: '用戶的推薦列表',
+            requiresAuth: false
+        },
+    },
 ]
 
 export default search

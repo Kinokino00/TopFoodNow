@@ -442,15 +442,6 @@ watch(
 </script>
 
 <style lang="scss" scoped>
-.grid-list-icons {
-  @apply flex items-center border border-primary-500 rounded overflow-hidden;
-  .icon {
-    @apply w-4 h-4 p-[5px] bg-white text-primary-500 text-sm cursor-pointer hover:bg-primary-400 hover:text-white;
-    &.active {
-      @apply bg-primary-500 text-white cursor-pointer hover:bg-primary-400;
-    }
-  }
-}
 .pagination {
   @apply flex justify-center items-center gap-1 pr-2;
   &-button {
