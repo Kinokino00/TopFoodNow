@@ -377,7 +377,7 @@ public class UserController {
     // region 取得指定用戶的所有個人推薦 (無須認證)
     @Operation(
         summary = "取得指定用戶的公開個人資料",
-        description = "無需認證。取得指定用戶的名稱、YouTube/Instagram 連結和頭像 URL，用於公共展示。",
+        description = "無需認證。取得指定用戶的名稱、YouTube/Instagram 連結和頭像 URL，用於公開展示",
         responses = {
             @ApiResponse(
                 responseCode = "200", description = "成功取得用戶資料",

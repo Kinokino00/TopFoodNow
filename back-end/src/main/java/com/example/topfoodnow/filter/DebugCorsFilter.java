@@ -22,7 +22,7 @@ public class DebugCorsFilter extends GenericFilterBean {
         System.out.println("DebugCorsFilter: Added X-Debug-Custom-Header");
 
         // 手動添加 CORS 頭
-        String origin = httpRequest.getHeader("Origin"); // 獲取前端的 Origin 頭
+        String origin = httpRequest.getHeader("Origin"); // 取得前端的 Origin 頭
         if (origin != null) {
             httpResponse.setHeader("Access-Control-Allow-Origin", origin);
             System.out.println("DebugCorsFilter: Added Access-Control-Allow-Origin: " + origin);

@@ -129,7 +129,7 @@ public class RecommendServiceImpl implements RecommendService {
                 return criteriaBuilder.or(finalPredicates.toArray(new Predicate[0]));
 
             } else {
-                // 當 searchTerm 為空時，返回一個永遠為真的條件，以獲取所有數據
+                // 當 searchTerm 為空時，返回一個永遠為真的條件，以取得所有數據
                 return criteriaBuilder.conjunction();
             }
         };
@@ -204,7 +204,7 @@ public class RecommendServiceImpl implements RecommendService {
         }
 
         // 2. 更新店家資訊 (如果店家名稱或地址有變更)
-        StoreModel storeToUpdate = existingRecommend.getStore(); // 獲取當前推薦關聯的店家
+        StoreModel storeToUpdate = existingRecommend.getStore(); // 取得當前推薦關聯的店家
         if (storeToUpdate == null) {
             throw new EntityNotFoundException("推薦關聯的店家不存在。");
         }
@@ -214,7 +214,7 @@ public class RecommendServiceImpl implements RecommendService {
         storeRepository.save(storeToUpdate); // 保存店家資訊的變更
 
         // 3. 處理圖片更新邏輯
-        List<String> currentPhotoUrls = existingRecommend.getPhotoUrls(); // 從資料庫獲取現有圖片 URL
+        List<String> currentPhotoUrls = existingRecommend.getPhotoUrls(); // 從資料庫取得現有圖片 URL
         if (currentPhotoUrls == null) {
             currentPhotoUrls = new ArrayList<>();
         }

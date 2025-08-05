@@ -115,7 +115,7 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
         StoreModel store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new EntityNotFoundException("Store not found with ID: " + storeId));
 
-        // 1. 獲取直接關聯的分類 (來自 store_category 表)
+        // 1. 取得直接關聯的分類 (來自 store_category 表)
         List<StoreCategoryModel> directAssociations = storeCategoryRepository.findStoreCategoriesByStoreIdWithDetails(storeId);
 
         // 將直接關聯的分類按 isAdminAdded 排序 (管理員添加的在前)
@@ -134,7 +134,7 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
                         }
                 )).forEach(sortedCategories::add);
 
-        // 2. 獲取用戶推薦次數最高的分類 (來自 recommend 相關表)
+        // 2. 取得用戶推薦次數最高的分類 (來自 recommend 相關表)
         List<Object[]> recommendedCategoryData = storeCategoryRepository.findCategoriesByRecommendationCountForStore(storeId);
 
         // 將推薦的分類（非管理員添加的且未重複的）添加到列表中
@@ -142,7 +142,7 @@ public class StoreCategoryServiceImpl implements StoreCategoryService {
                 .map(row -> {
                     Integer categoryId = (Integer) row[0];
                     String categoryName = (String) row[1];
-                    // 您可能需要查詢 CategoryModel 來獲取完整的 CategoryDTO
+                    // 您可能需要查詢 CategoryModel 來取得完整的 CategoryDTO
                     CategoryModel categoryModel = categoryRepository.findById(categoryId).orElse(null);
                     return categoryModel != null ? convertToCategoryDTO(categoryModel) : null;
                 })

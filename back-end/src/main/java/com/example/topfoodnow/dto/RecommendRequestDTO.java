@@ -14,7 +14,7 @@ public class RecommendRequestDTO {
     private Integer id; // 這個 id 就是 recommend 表中的 id
 
     @Schema(description = "店家的唯一ID", accessMode = Schema.AccessMode.READ_ONLY)
-    private Integer storeId; // 這個會從資料庫中獲取，不是前端傳入的主要更新標識
+    private Integer storeId; // 這個會從資料庫中取得，不是前端傳入的主要更新標識
 
     @Schema(description = "店家名稱", requiredMode = Schema.RequiredMode.REQUIRED)
     private String storeName;

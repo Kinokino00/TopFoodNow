@@ -23,20 +23,20 @@ public class StoreController {
 
     private final StoreService storeService;
 
-    @Operation(summary = "隨機獲取指定數量的店家及其平均評分", description = "返回店家ID、名稱和基於其推薦的平均評分。")
+    @Operation(summary = "隨機取得指定數量的店家及其平均評分", description = "返回店家ID、名稱和基於其推薦的平均評分。")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "成功獲取店家列表"),
+        @ApiResponse(responseCode = "200", description = "成功取得店家列表"),
         @ApiResponse(responseCode = "400", description = "請求參數無效")
     })
     @GetMapping("/random")
     public ResponseEntity<List<StoreWithAvgScoreDTO>> getRandomStoresWithAverageScore(
-            @Parameter(description = "要獲取的店家數量", required = false, example = "3")
+            @Parameter(description = "要取得的店家數量", required = false, example = "3")
             @RequestParam(defaultValue = "3") int limit) {
         if (limit <= 0) {
             logger.warn("請求的隨機店家數量無效: {}", limit);
             return ResponseEntity.badRequest().build();
         }
-        logger.info("請求隨機獲取 {} 家店家及其平均評分", limit);
+        logger.info("請求隨機取得 {} 家店家及其平均評分", limit);
         List<StoreWithAvgScoreDTO> stores = storeService.getRandomStoresWithAverageScore(limit);
         return ResponseEntity.ok(stores);
     }

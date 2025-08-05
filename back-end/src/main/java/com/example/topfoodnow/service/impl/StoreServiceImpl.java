@@ -26,7 +26,7 @@ public class StoreServiceImpl implements StoreService {
         List<StoreModel> randomStores = storeRepository.findRandomStores(pageable);
 
         return randomStores.stream().map(store -> {
-            // 從 repository 獲取原始的 Double 平均分數
+            // 從 repository 取得原始的 Double 平均分數
             Double averageScore = recommendRepository.findAverageScoreByStoreId(store.getId());
 
             // 處理平均分數：如果為 null 則設為 0，然後四捨五入取整為 Integer

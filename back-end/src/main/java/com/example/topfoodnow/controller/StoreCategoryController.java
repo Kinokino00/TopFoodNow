@@ -38,9 +38,9 @@ public class StoreCategoryController {
     }
 
     /**
-     * 獲取當前用戶 ID
+     * 取得當前用戶 ID
      * @param principal Spring Security 提供的當前認證用戶資訊
-     * @return 成功則獲取當前用戶 ID (Integer)；否則返回 null，表示用戶未登入或系統中不存在與 Principal 關聯的用戶
+     * @return 成功則取得當前用戶 ID (Integer)；否則返回 null，表示用戶未登入或系統中不存在與 Principal 關聯的用戶
      */
     private Integer getCurrentUserId(Principal principal) {
         if (principal == null) {
@@ -74,14 +74,14 @@ public class StoreCategoryController {
     @Operation(summary = "取得指定店家的所有分類", description = "返回指定店家經過排序的分類列表。排序規則：管理員添加的分類優先，其次是根據用戶選擇次數排序")
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200", description = "成功獲取店家分類列表",
+            responseCode = "200", description = "成功取得店家分類列表",
             content = @Content(mediaType = "application/json",
             schema = @Schema(implementation = StoreCategoryResponseDTO.class))),
         @ApiResponse(responseCode = "404", description = "未找到指定店家")
     })
     @GetMapping("/by-store/{storeId}")
     public ResponseEntity<StoreCategoryResponseDTO> getCategoriesForStore(@PathVariable Integer storeId) {
-        logger.info("請求獲取店家 ID: {} 的分類列表。", storeId);
+        logger.info("請求取得店家 ID: {} 的分類列表。", storeId);
         try {
             StoreCategoryResponseDTO response = storeCategoryService.getSortedCategoriesForStore(storeId);
             return ResponseEntity.ok(response);
@@ -89,7 +89,7 @@ public class StoreCategoryController {
             logger.warn("未找到店家 ID: {}。", storeId);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (Exception e) {
-            logger.error("獲取店家 ID: {} 分類時發生錯誤: {}", storeId, e.getMessage(), e);
+            logger.error("取得店家 ID: {} 分類時發生錯誤: {}", storeId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -97,14 +97,14 @@ public class StoreCategoryController {
 //    @Operation(summary = "取得指定分類下的所有店家")
 //    @ApiResponses(value = {
 //        @ApiResponse(
-//            responseCode = "200", description = "成功獲取店家列表",
+//            responseCode = "200", description = "成功取得店家列表",
 //            content = @Content(mediaType = "application/json",
 //            schema = @Schema(implementation = StoreCategoryDTO.class))),
 //        @ApiResponse(responseCode = "404", description = "未找到指定分類")
 //    })
 //    @GetMapping("/by-category/{categoryId}")
 //    public ResponseEntity<List<StoreCategoryDTO>> getStoresForCategory(@PathVariable Integer categoryId) {
-//        logger.info("請求獲取分類 ID: {} 下的所有店家。", categoryId);
+//        logger.info("請求取得分類 ID: {} 下的所有店家。", categoryId);
 //        try {
 //            List<StoreCategoryDTO> stores = storeCategoryService.getStoresByCategoryId(categoryId);
 //            return ResponseEntity.ok(stores);
@@ -112,7 +112,7 @@ public class StoreCategoryController {
 //            logger.warn("未找到分類 ID: {}。", categoryId);
 //            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 //        } catch (Exception e) {
-//            logger.error("獲取分類 ID: {} 下的店家時發生錯誤: {}", categoryId, e.getMessage(), e);
+//            logger.error("取得分類 ID: {} 下的店家時發生錯誤: {}", categoryId, e.getMessage(), e);
 //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 //        }
 //    }
