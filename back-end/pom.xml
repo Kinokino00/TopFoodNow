@@ -36,7 +36,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!--JWT-->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
@@ -71,9 +70,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>8.0.33</version>
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+			<version>8.4.0</version>
 		</dependency>
 
 		<dependency>
@@ -91,7 +90,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.38</version>
+			<version>1.18.32</version>
 			<scope>provided</scope>
 		</dependency>
 
@@ -103,12 +102,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.json</groupId>
-			<artifactId>json</artifactId>
-			<version>20230618</version>
 		</dependency>
 
 		<dependency>
@@ -159,7 +152,8 @@
 			<dependency>
 				<groupId>com.google.cloud</groupId>
 				<artifactId>spring-cloud-gcp-dependencies</artifactId>
-				<version>5.2.0</version> <type>pom</type>
+				<version>5.2.0</version>
+				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
 		</dependencies>

@@ -47,7 +47,7 @@ const isOpen = ref(false)
   @apply text-white;
 }
 .options {
-  @apply top-[3.25rem] left-5 p-1.5 w-fit bg-white text-gray-600 rounded shadow-gray sm:top-16 sm:left-auto sm:right-6 sm:p-2;
+  @apply top-[3.5rem] left-5 p-1.5 w-fit bg-white text-sm text-gray-600 rounded shadow-gray sm:top-16 sm:left-auto sm:right-6 sm:p-2;
   li {
     @apply py-1.5 px-2 cursor-pointer;
     &:hover {

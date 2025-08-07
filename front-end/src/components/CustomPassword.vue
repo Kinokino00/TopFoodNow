@@ -1,16 +1,7 @@
 <template>
   <div>
-    <div
-      :class="[
-        'component-' + (state.passwordState.layout ?? 'col'),
-        state.passwordState.width
-      ]"
-    >
-      <p
-        v-if="state.passwordState.label"
-        class="labelText"
-        :class="state.getLabelClass"
-      >
+    <div :class="['component-' + (state.passwordState.layout ?? 'col'), state.passwordState.width]">
+      <p v-if="state.passwordState.label" class="labelText" :class="state.getLabelClass">
         <font-awesome-icon
           class="icon"
           :icon="state.passwordState.icon"
@@ -20,10 +11,7 @@
       </p>
       <div
         class="inputDiv flex items-center"
-        :class="[
-          state.getClasses,
-          state.passwordState.inputDivClass
-        ]"
+        :class="[state.getClasses, state.passwordState.inputDivClass]"
       >
         <input
           :type="state.isActive ? 'password' : 'text'"
@@ -55,23 +43,22 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
 import { reactive, computed, watchEffect } from 'vue'
 
 export type PasswordState = {
   modelValue: string
-  layout?: string      // 預設 'col'
+  layout?: string // 預設 'col'
   width?: string
   iconClass?: string
   icon?: string
-  labelClass?: string  // 預設 'min-w-[100px]'
+  labelClass?: string // 預設 'min-w-[100px]'
   label?: string
   inputDivClass?: string
   inputClass?: string
   inputChange?: (event: Event) => void
   placeholder?: string // 預設 '請輸入'
-  disabled?: boolean   // 預設 false
+  disabled?: boolean // 預設 false
   errorMessage?: string
   readonly?: boolean
   dataTestId?: string
@@ -82,17 +69,17 @@ const state: any = reactive({
   passwordState: props.passwordState,
   getClasses: computed(() => ({
     '!border-gray-200 !pr-2.5': state.passwordState.disabled,
-    'inputDivError': state.passwordState.errorMessage,
-    'inputDivReadonly': state.passwordState.readonly
+    inputDivError: state.passwordState.errorMessage,
+    inputDivReadonly: state.passwordState.readonly
   })),
   getLabelClass: computed(() => {
     const { labelClass = '', icon } = state.passwordState
-    return icon && labelClass.includes('text-end') 
-      ? `flex items-center justify-end gap-1 ${labelClass}` 
+    return icon && labelClass.includes('text-end')
+      ? `flex items-center justify-end gap-1 ${labelClass}`
       : labelClass || 'min-w-[100px]'
   })
 })
-watchEffect(() => state.passwordState = props.passwordState)
+watchEffect(() => (state.passwordState = props.passwordState))
 
 const inputEmits = (event: Event) => {
   emit('update:modelValue', (event.target as HTMLInputElement)?.value)
@@ -100,7 +87,6 @@ const inputEmits = (event: Event) => {
 const emit = defineEmits(['update:modelValue'])
 </script>
 
-
 <style lang="scss" scoped>
-@import '@/assets/style/inputTextArea.scss';
+@use '@/assets/style/inputTextArea';
 </style>

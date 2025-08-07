@@ -70,5 +70,5 @@ const handleCheckboxChange = () => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/style/checkboxRadio.scss';
+@use '@/assets/style/checkboxRadio';
 </style>

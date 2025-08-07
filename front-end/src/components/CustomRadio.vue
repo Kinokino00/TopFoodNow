@@ -1,16 +1,7 @@
 <template>
   <div>
-    <div
-      :class="[
-        'component-' + state.getLayout,
-        state.radioState.width
-      ]"
-    >
-      <p
-        v-if="state.radioState.label"
-        class="labelText"
-        :class="state.getLabelClass"
-      >
+    <div :class="['component-' + state.getLayout, state.radioState.width]">
+      <p v-if="state.radioState.label" class="labelText" :class="state.getLabelClass">
         {{ state.radioState.label }}
       </p>
       <div class="flex flex-auto gap-3">
@@ -65,7 +56,6 @@
   </div>
 </template>
 
-
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from 'vue'
 
@@ -73,11 +63,11 @@ export type RadioValue = String | Number | Boolean | null
 export type RadioState = {
   modelValue: RadioValue
   value: { name: string; value: RadioValue }[]
-  id?: string          // 預設 'radioButton'
+  id?: string // 預設 'radioButton'
   width?: string
-  layout?: string      // 預設 'row' 本專案沒有col的情況，radioButton多用在popup
+  layout?: string // 預設 'row' 本專案沒有col的情況，radioButton多用在popup
   label?: string
-  labelClass?: string  // 預設 'w-[100px]'
+  labelClass?: string // 預設 'w-[100px]'
   disabled?: boolean
   disabledName?: string
   errorMessage?: string
@@ -92,15 +82,14 @@ const state: any = reactive({
     'w-full !ml-0': state.getLayout === 'col'
   })),
   getRadioButtonClass: computed(() => ({
-    'checkboxRadioError': state.radioState.errorMessage
+    checkboxRadioError: state.radioState.errorMessage
   }))
 })
-watchEffect(() => state.radioState = props.radioState)
+watchEffect(() => (state.radioState = props.radioState))
 
 const emit = defineEmits(['update:modelValue'])
 </script>
 
-
 <style lang="scss" scoped>
-@import '@/assets/style/checkboxRadio.scss';
+@use '@/assets/style/checkboxRadio';
 </style>

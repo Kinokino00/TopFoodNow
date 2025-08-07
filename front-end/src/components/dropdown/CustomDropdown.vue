@@ -131,6 +131,7 @@ const optionsState = reactive({
   width: 0,
   x: 0,
   y: 0,
+  isUp: false,
   openOptions: () => (optionsState.isShow = !optionsState.isShow),
   closeOptions: () => (optionsState.isShow = false)
 })
@@ -153,8 +154,41 @@ const filterState = reactive<FilterState>({
 })
 
 const selectOption = (option: DropdownOption) => {
-  props.dropdownState.modelValue = option.value
+  emit('update:modelValue', option.value)
   optionsState.closeOptions()
+}
+
+const calculatePosition = () => {
+  const rect = inputDivRef.value?.getBoundingClientRect()
+  if (!rect) return
+
+  optionsState.width = Number(rect.width.toFixed(0))
+  optionsState.x = Number(rect.x.toFixed(0))
+
+  const viewportHeight = window.innerHeight
+  const dropdownHeight = 40
+  const optionContainerHeight = 160
+
+  const spaceBelow = viewportHeight - rect.bottom
+
+  if (spaceBelow < optionContainerHeight) {
+    optionsState.isUp = true
+    optionsState.y = Number(rect.top.toFixed(0)) + window.scrollY - optionContainerHeight + 56
+  } else {
+    optionsState.isUp = false
+    optionsState.y = Number(rect.y.toFixed(0)) + window.scrollY + dropdownHeight - 1
+  }
+}
+
+watchEffect(() => {
+  if (optionsState.isShow && inputDivRef.value) {
+    calculatePosition()
+  }
+})
+
+const handleResize = () => {
+  if (window.innerWidth < 768) optionsState.closeOptions()
+  if (optionsState.isShow) calculatePosition()
 }
 
 const handleInput = (event: Event) => {
@@ -183,12 +217,14 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('resize', handleResize)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/style/dropdownMultiSelect.scss';
+@use '@/assets/style/dropdownMultiSelect';
 </style>

@@ -12,10 +12,7 @@
       class="icon"
       :class="state.buttonState.iconClass"
     />
-    <span
-      v-if="state.buttonState.label"
-      :class="state.buttonState.labelClass"
-    >
+    <span v-if="state.buttonState.label" :class="state.buttonState.labelClass">
       {{ state.buttonState.label }}
     </span>
     <font-awesome-icon
@@ -26,7 +23,6 @@
     />
   </button>
 </template>
-
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from 'vue'
@@ -42,8 +38,8 @@ export type ButtonState = {
   label?: string
   labelClass?: string
   disabled?: boolean
-  size?: string    // 'lg' | 'md'
-  color?: string   // 'primary' | 'secondary' | 'danger' | 'white'
+  size?: string // 'lg' | 'md'
+  color?: string // 'primary' | 'secondary' | 'danger' | 'white'
   btnType?: string // 'button' | 'submit' | 'reset'
 }
 const props = defineProps<{ buttonState: ButtonState }>()
@@ -51,20 +47,21 @@ const state: any = reactive({
   buttonState: props.buttonState,
   getClasses: computed(() => ({
     'button-icon': state.buttonState.icon && !state.buttonState.label,
-    'button-iconLabel': (state.buttonState.icon || state.buttonState.img) && state.buttonState.label,
+    'button-iconLabel':
+      (state.buttonState.icon || state.buttonState.img) && state.buttonState.label,
     [`button-${state.buttonState.size || 'md'}`]: state.buttonState.size,
     [`button-${state.buttonState.color}`]: state.buttonState.color
   }))
 })
-watchEffect(() => state.buttonState = props.buttonState)
+watchEffect(() => (state.buttonState = props.buttonState))
 </script>
-
 
 <style lang="scss" scoped>
 .button {
   @apply px-3 bg-gray-600 text-white whitespace-nowrap rounded-lg outline-none hover:bg-gray-500 active:bg-gray-700;
   &:disabled {
-    &, &:hover {
+    &,
+    &:hover {
       @apply bg-gray-100 text-gray-500 border-none;
     }
   }
@@ -89,7 +86,7 @@ watchEffect(() => state.buttonState = props.buttonState)
     @apply bg-danger-500 hover:bg-danger-400 active:bg-danger-700;
   }
   &-white {
-    @apply bg-white text-gray-600 border border-gray-200 active:bg-gray-100;
+    @apply bg-white text-gray-600;
     &:hover {
       @apply bg-white text-primary-500;
     }
@@ -134,10 +131,12 @@ watchEffect(() => state.buttonState = props.buttonState)
         @apply hover:text-danger-400 active:text-danger-700;
       }
     }
-    &:disabled, &:disabled:hover {
+    &:disabled,
+    &:disabled:hover {
       @apply bg-transparent;
       .icon {
-        &, &:hover {
+        &,
+        &:hover {
           @apply text-gray-500;
         }
       }

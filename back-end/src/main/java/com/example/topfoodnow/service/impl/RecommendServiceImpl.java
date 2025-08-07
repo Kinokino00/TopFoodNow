@@ -91,10 +91,6 @@ public class RecommendServiceImpl implements RecommendService {
         Specification<RecommendModel> spec = (root, query, criteriaBuilder) -> {
             List<Predicate> finalPredicates = new ArrayList<>(); // 用於存放每個關鍵字的 OR 組合條件
 
-            // 為了避免 N+1 問題，預加載關聯實體
-            root.fetch("user", JoinType.INNER);
-            root.fetch("store", JoinType.INNER);
-
             if (StringUtils.hasText(searchTerm)) {
                 String[] keywords = searchTerm.toLowerCase().split("\\s+");
 

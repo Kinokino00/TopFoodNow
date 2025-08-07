@@ -1,0 +1,25 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: SSH and deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TOPFOODNOW_EC2_HOST }}
+          username: ${{ secrets.TOPFOODNOW_EC2_USERNAME }}
+          key: ${{ secrets.TOPFOODNOW_EC2_KEY }}
+          script: |
+            cd /home/ubuntu/topfoodnow-develop
+            git pull origin develop
+            docker-compose up -d --build
+            docker system prune -f

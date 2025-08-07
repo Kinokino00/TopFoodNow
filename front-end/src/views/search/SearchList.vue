@@ -447,22 +447,19 @@ watch(
   &-button {
     @apply w-6 h-6 !px-1.5 text-xs !rounded sm:text-sm;
     &.button-white {
-      @apply bg-white hover:bg-gray-300;
+      @apply bg-white;
     }
   }
   &-arrow {
-    @apply text-gray-400 text-xxs md:text-xs;
+    @apply text-xxs md:text-xs;
     &,
     &:hover {
-      @apply text-gray-300;
+      @apply bg-white;
     }
     &:disabled {
       &,
       &:hover {
-        @apply text-gray-200;
-      }
-      &:hover {
-        @apply bg-white;
+        @apply text-gray-200 bg-white;
       }
     }
   }

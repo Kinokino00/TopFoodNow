@@ -6,11 +6,7 @@
         state.inputNumberState.width
       ]"
     >
-      <p
-        v-if="state.inputNumberState.label"
-        class="labelText"
-        :class="state.getLabelClass"
-      >
+      <p v-if="state.inputNumberState.label" class="labelText" :class="state.getLabelClass">
         <font-awesome-icon
           class="icon"
           :icon="state.inputNumberState.icon"
@@ -18,13 +14,7 @@
         />
         {{ state.inputNumberState.label }}
       </p>
-      <div
-        class="inputDiv"
-        :class="[
-          state.getClasses,
-          state.inputNumberState.inputDivClass
-        ]"
-      >
+      <div class="inputDiv" :class="[state.getClasses, state.inputNumberState.inputDivClass]">
         <input
           type="number"
           class="input inputNumber"
@@ -58,33 +48,33 @@ import { reactive, computed, watchEffect } from 'vue'
 
 export type InputNumberState = {
   modelValue: number
-  layout?: string      // 預設 'col'
+  layout?: string // 預設 'col'
   width?: string
   iconClass?: string
   icon?: string
-  labelClass?: string  // 預設 'min-w-[100px]'
+  labelClass?: string // 預設 'min-w-[100px]'
   label?: string
   inputDivClass?: string
   inputClass?: string
   inputChange?: (event: Event) => void
   placeholder?: string // 預設 '請輸入'
-  disabled?: boolean   // 預設 false
+  disabled?: boolean // 預設 false
   errorMessage?: string
   readonly?: boolean
   isPaginate?: boolean
-  step?: number        // 預設 1
-  min?: number         // 預設 0
-  max?: number         // 預設 Infinity
+  step?: number // 預設 1
+  min?: number // 預設 0
+  max?: number // 預設 Infinity
   dataTestId?: string
 }
 const props = defineProps<{ inputNumberState: InputNumberState }>()
 const state: any = reactive({
   inputNumberState: props.inputNumberState,
   getClasses: computed(() => ({
-    'inputNumberPaginate': state.inputNumberState.isPaginate,
+    inputNumberPaginate: state.inputNumberState.isPaginate,
     '!border-gray-200 !pr-2.5': state.inputNumberState.disabled,
-    'inputDivError': state.inputNumberState.errorMessage,
-    'inputDivReadonly': state.inputNumberState.readonly
+    inputDivError: state.inputNumberState.errorMessage,
+    inputDivReadonly: state.inputNumberState.readonly
   })),
   getLabelClass: computed(() => {
     const labelClass = state.inputNumberState.labelClass || ''
@@ -94,7 +84,7 @@ const state: any = reactive({
     return labelClass || 'min-w-[100px]'
   })
 })
-watchEffect(() => state.inputNumberState = props.inputNumberState)
+watchEffect(() => (state.inputNumberState = props.inputNumberState))
 
 const inputEmits = (event: Event) => {
   emit('update:modelValue', (event.target as HTMLInputElement)?.value)
@@ -103,5 +93,5 @@ const emit = defineEmits(['update:modelValue'])
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/style/inputTextArea.scss';
+@use '@/assets/style/inputTextArea';
 </style>

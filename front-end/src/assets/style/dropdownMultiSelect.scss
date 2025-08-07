@@ -22,7 +22,7 @@
 }
 .option {
   &-container {
-    @apply absolute z-10 p-1 bg-white border border-gray-200 rounded-lg md:p-2;
+    @apply absolute z-10 p-1 -mt-2 bg-white text-xs border border-gray-200 rounded-lg md:text-sm;
   }
   &-item {
     @apply p-1.5;

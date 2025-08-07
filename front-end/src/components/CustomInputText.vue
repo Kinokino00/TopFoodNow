@@ -91,5 +91,5 @@ const emit = defineEmits(['update:modelValue'])
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/style/inputTextArea.scss';
+@use '@/assets/style/inputTextArea';
 </style>

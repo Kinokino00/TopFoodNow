@@ -1,0 +1,48 @@
+version: '1.1'
+
+services:
+  backend:
+    build: ./back-end
+    container_name: topfoodnow_backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./gcs-key.json:/app/gcs-key.json
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcs-key.json
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      - redis
+    networks:
+      - topfoodnow_network
+
+  frontend:
+    build: ./front-end
+    container_name: topfoodnow_frontend
+    ports:
+      - "4000:80"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - backend
+    networks:
+      - topfoodnow_network
+
+  redis:
+    image: redis:alpine
+    container_name: topfoodnow_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    networks:
+      - topfoodnow_network
+
+networks:
+  topfoodnow_network:
+    driver: bridge
+
+volumes:
+  redis_data:

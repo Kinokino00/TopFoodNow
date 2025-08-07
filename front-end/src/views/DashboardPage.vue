@@ -22,8 +22,7 @@
               icon: 'fa-solid fa-magnifying-glass',
               iconClass: 'relative -top-px !text-xs md:-top-0.5'
             }"
-            :disabled="loading"
-            @click="handleSearch"
+            @click="navigateToSearchResults(undefined, true)"
           />
         </div>
         <div class="flex item-center gap-1 sm:gap-2">
