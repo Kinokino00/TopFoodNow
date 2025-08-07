@@ -2,6 +2,9 @@
 # 使用 Node.js 作為構建環境
 FROM node:20-alpine AS builder
 
+# 安裝 pnpm
+RUN npm install -g pnpm
+
 # 設置工作目錄
 WORKDIR /app
 
