@@ -1,6 +1,5 @@
 package com.example.topfoodnow.controller;
 
-import com.example.topfoodnow.dto.StoreCategoryDTO;
 import com.example.topfoodnow.dto.StoreCategoryRequestDTO;
 import com.example.topfoodnow.dto.StoreCategoryResponseDTO;
 import com.example.topfoodnow.service.StoreCategoryService;
@@ -21,7 +20,6 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.security.Principal;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/store-categories")
@@ -70,52 +68,6 @@ public class StoreCategoryController {
                 .map(user -> user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getName()))
                 .orElse(false);
     }
-
-    @Operation(summary = "取得指定店家的所有分類", description = "返回指定店家經過排序的分類列表。排序規則：管理員添加的分類優先，其次是根據用戶選擇次數排序")
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", description = "成功取得店家分類列表",
-            content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = StoreCategoryResponseDTO.class))),
-        @ApiResponse(responseCode = "404", description = "未找到指定店家")
-    })
-    @GetMapping("/by-store/{storeId}")
-    public ResponseEntity<StoreCategoryResponseDTO> getCategoriesForStore(@PathVariable Integer storeId) {
-        logger.info("請求取得店家 ID: {} 的分類列表。", storeId);
-        try {
-            StoreCategoryResponseDTO response = storeCategoryService.getSortedCategoriesForStore(storeId);
-            return ResponseEntity.ok(response);
-        } catch (jakarta.persistence.EntityNotFoundException e) {
-            logger.warn("未找到店家 ID: {}。", storeId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        } catch (Exception e) {
-            logger.error("取得店家 ID: {} 分類時發生錯誤: {}", storeId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
-//    @Operation(summary = "取得指定分類下的所有店家")
-//    @ApiResponses(value = {
-//        @ApiResponse(
-//            responseCode = "200", description = "成功取得店家列表",
-//            content = @Content(mediaType = "application/json",
-//            schema = @Schema(implementation = StoreCategoryDTO.class))),
-//        @ApiResponse(responseCode = "404", description = "未找到指定分類")
-//    })
-//    @GetMapping("/by-category/{categoryId}")
-//    public ResponseEntity<List<StoreCategoryDTO>> getStoresForCategory(@PathVariable Integer categoryId) {
-//        logger.info("請求取得分類 ID: {} 下的所有店家。", categoryId);
-//        try {
-//            List<StoreCategoryDTO> stores = storeCategoryService.getStoresByCategoryId(categoryId);
-//            return ResponseEntity.ok(stores);
-//        } catch (jakarta.persistence.EntityNotFoundException e) {
-//            logger.warn("未找到分類 ID: {}。", categoryId);
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-//        } catch (Exception e) {
-//            logger.error("取得分類 ID: {} 下的店家時發生錯誤: {}", categoryId, e.getMessage(), e);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-//        }
-//    }
 
     @Operation(summary = "為店家添加或更新分類", description = "需要 ADMIN 權限。為指定店家添加多個分類。如果分類已存在，則更新其關聯。管理員添加的分類將在排序時優先")
     @ApiResponses(value = {

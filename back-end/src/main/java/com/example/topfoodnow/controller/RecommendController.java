@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import org.springframework.util.StringUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -131,11 +130,11 @@ public class RecommendController {
     }
     // endregion
 
-    // region 取得指定店家的所有推薦
-    @Operation(summary = "取得指定店家的所有推薦", description = "根據店家ID取得該店家的所有餐廳推薦列表")
+    // region 取得指定店家的所有推薦 (無需認證)
+    @Operation(summary = "取得指定店家的所有推薦 (無需認證)", description = "根據店家ID取得該店家的所有餐廳推薦列表")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "成功取得指定店家的推薦列表"),
-            @ApiResponse(responseCode = "404", description = "未找到指定店家")
+        @ApiResponse(responseCode = "200", description = "成功取得指定店家的推薦列表"),
+        @ApiResponse(responseCode = "404", description = "未找到指定店家")
     })
     @GetMapping("/store/{storeId}")
     public ResponseEntity<List<RecommendResponseDTO>> getRecommendsByStoreId(
@@ -143,7 +142,7 @@ public class RecommendController {
             @PathVariable Integer storeId) {
         logger.info("請求取得店家 ID: {} 的所有推薦", storeId);
         // 先檢查店家是否存在
-        if (!storeRepository.existsById(storeId)) { // 需要注入 StoreRepository
+        if (!storeRepository.existsById(storeId)) {
             logger.warn("嘗試取得推薦：店家 ID: {} 不存在", storeId);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -243,8 +242,8 @@ public class RecommendController {
         }
         // 圖片驗證
         if (recommendCreateRequestDTO.getStorePhoto() == null || recommendCreateRequestDTO.getStorePhoto().isEmpty() || recommendCreateRequestDTO.getStorePhoto().stream().allMatch(MultipartFile::isEmpty)) {
-            errors.add("請上傳店家圖片！"); // 如果圖片是必填項
-        } else if (recommendCreateRequestDTO.getStorePhoto().size() > 5) { // 實際限制上傳數量
+            errors.add("請上傳店家圖片！");
+        } else if (recommendCreateRequestDTO.getStorePhoto().size() > 5) {
             errors.add("最多只能上傳 5 張圖片！");
         }
 
@@ -289,32 +288,30 @@ public class RecommendController {
 
     // region 更新當前認證用戶對指定店家的推薦
     @Operation(
-            summary = "更新當前認證用戶對指定推薦",
-            parameters = {
-                    @Parameter(name = "recommendId", description = "要更新的推薦的ID", required = true, example = "1", in = ParameterIn.PATH) // 修改為 recommendId
-            },
-            requestBody = @RequestBody(
-                    description = "更新後的推薦信息和可選的店家圖片。圖片通過 multipart/form-oata 提交",
-                    required = true,
-                    content = @Content(
-                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(implementation = RecommendRequestDTO.class)
-                    )
-            ),
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "推薦更新成功"),
-                    @ApiResponse(responseCode = "400", description = "請求數據無效或無權限操作"),
-                    @ApiResponse(responseCode = "401", description = "未經認證"),
-                    @ApiResponse(responseCode = "404", description = "未找到該推薦")
-            }
+        summary = "更新當前認證用戶對指定推薦",
+        parameters = {
+            @Parameter(name = "recommendId", description = "要更新的推薦的ID", required = true, example = "1", in = ParameterIn.PATH)
+        },
+        requestBody = @RequestBody(
+            description = "更新後的推薦信息和可選的店家圖片。圖片通過 multipart/form-oata 提交",
+            required = true,
+            content = @Content(
+                mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                schema = @Schema(implementation = RecommendRequestDTO.class)
+            )
+        ),
+        responses = {
+            @ApiResponse(responseCode = "200", description = "推薦更新成功"),
+            @ApiResponse(responseCode = "400", description = "請求數據無效或無權限操作"),
+            @ApiResponse(responseCode = "401", description = "未經認證"),
+            @ApiResponse(responseCode = "404", description = "未找到該推薦")
+        }
     )
     @PutMapping(value = "/{recommendId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RecommendResponseDTO> updateRecommendProcess(
             @Parameter(description = "URL 路徑中的推薦ID", required = true, in = ParameterIn.PATH)
-            @PathVariable("recommendId") Integer recommendId, // 變數名改為 recommendId 更清晰
+            @PathVariable("recommendId") Integer recommendId,
             @ModelAttribute RecommendRequestDTO recommendRequestDTO,
-//            @Parameter(description = "希望保留的現有圖片URL列表 (多個URL用逗號分隔)", example = "url1,url2")
-//            @RequestParam(value = "retainedPhotoUrls", required = false) List<String> retainedPhotoUrls,
             @Parameter(description = "希望保留的現有圖片URL的JSON字符串", example = "[\"url1\",\"url2\"]")
             @RequestParam(value = "retainedPhotoUrls", required = false) String retainedPhotoUrlsJson,
             Principal principal) {
@@ -340,7 +337,7 @@ public class RecommendController {
         // 圖片驗證 (只驗證新上傳的圖片數量)
         if (recommendRequestDTO.getStorePhoto() != null && !recommendRequestDTO.getStorePhoto().isEmpty()) {
             long nonNullFilesCount = recommendRequestDTO.getStorePhoto().stream().filter(file -> !file.isEmpty()).count();
-            if (nonNullFilesCount > 5) { // 假設總圖片限制為5張，這裡是新圖的上限
+            if (nonNullFilesCount > 5) {
                 errors.add("單次最多只能上傳 5 張圖片！");
             }
         }
@@ -352,7 +349,7 @@ public class RecommendController {
                 retainedPhotoUrls = objectMapper.readValue(retainedPhotoUrlsJson, new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
             } catch (JsonProcessingException e) {
                 logger.error("解析 retainedPhotoUrls JSON 字符串失敗: {}", retainedPhotoUrlsJson, e);
-                return ResponseEntity.badRequest().body(null); // 返回錯誤
+                return ResponseEntity.badRequest().body(null);
             }
         }
 
@@ -362,7 +359,7 @@ public class RecommendController {
         }
 
         try {
-            // 圖片上傳 (只處理新上傳的圖片)
+            // 只處理新上傳的圖片
             List<String> newUploadedPhotoUrls = new ArrayList<>();
             if (recommendRequestDTO.getStorePhoto() != null && !recommendRequestDTO.getStorePhoto().isEmpty()) {
                 for (MultipartFile file : recommendRequestDTO.getStorePhoto()) {
@@ -376,7 +373,6 @@ public class RecommendController {
             UserModel currentUserModel = userService.findById(currentUserId)
                     .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到"));
 
-            // 調用 Service 層進行更新，將新上傳的圖片 URL 列表傳入
             RecommendResponseDTO updatedRecommend = recommendService.updateRecommend(
                     recommendId,
                     recommendRequestDTO,
@@ -391,7 +387,7 @@ public class RecommendController {
             logger.error("更新推薦失敗：{}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         } catch (IOException e) {
-            logger.error("更新推薦失敗：圖片上傳/刪除錯誤：{}", e.getMessage(), e); // 錯誤信息更具體
+            logger.error("更新推薦失敗：圖片上傳/刪除錯誤：{}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         } catch (Exception e) {
             logger.error("更新推薦失敗：意外錯誤：{}", e.getMessage(), e);
@@ -426,14 +422,13 @@ public class RecommendController {
         try {
             UserModel currentUserModel = userService.findById(currentUserId)
                     .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到"));
-            // 這裡調用 Service 層的 deleteRecommend 方法
             recommendService.deleteRecommend(currentUserId, storeId, currentUserModel);
             logger.info("用戶 ID: {} 成功刪除對店家 ID: {} 的推薦。", currentUserId, storeId);
             return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException e) {
             logger.error("刪除推薦失敗：找不到推薦或無權限。用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUserId, storeId, e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        } catch (IOException e) { // 捕獲 IOException
+        } catch (IOException e) {
             logger.error("刪除推薦失敗：圖片刪除錯誤。用戶ID: {}, 店家ID: {}. 錯誤訊息: {}", currentUserId, storeId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (Exception e) {

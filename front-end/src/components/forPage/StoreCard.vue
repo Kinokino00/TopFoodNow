@@ -33,7 +33,13 @@
     </div>
 
     <h3 class="store-name mx-2" :class="props.isShort ? 'text-center' : 'mt-2'">
-      {{ itemData.storeName }}
+      <template v-if="props.isStore">{{ itemData.storeName }}</template>
+      <RouterLink
+        v-else
+        :to="{ name: 'storeRecommendations', params: { storeId: itemData.storeId } }"
+      >
+        {{ itemData.storeName }}
+      </RouterLink>
     </h3>
 
     <template v-if="!props.isShort">
@@ -74,7 +80,7 @@ interface GenericStoreCardData {
   createdAt?: string
   score?: number
   photoUrl?: string | null
-  photoUrls?: string | null
+  photoUrls?: string[] | null
   storeName?: string
   categoryNames?: string[]
   reason?: string
@@ -83,6 +89,7 @@ interface GenericStoreCardData {
 const props = defineProps<{
   itemData: GenericStoreCardData
   isShort?: boolean
+  isStore?: boolean
 }>()
 
 const router = useRouter()

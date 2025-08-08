@@ -13,8 +13,15 @@
       </p>
       <div class="inputDiv" :class="[state.getClasses, state.inputTextState.inputDivClass]">
         <RouterLink
-          v-if="state.inputTextState.readonly && state.inputTextState.userId"
-          :to="{ name: 'userRecommendations', params: { userId: state.inputTextState.userId } }"
+          v-if="
+            state.inputTextState.readonly &&
+            (state.inputTextState.userId || state.inputTextState.storeId)
+          "
+          :to="
+            state.inputTextState.userId
+              ? { name: 'userRecommendations', params: { userId: state.inputTextState.userId } }
+              : { name: 'storeRecommendations', params: { storeId: state.inputTextState.storeId } }
+          "
           class="text-secondary-700 cursor-pointer hover:underline"
         >
           {{ state.inputTextState.modelValue }}
@@ -63,7 +70,8 @@ export type InputTextState = {
   disabled?: boolean // 預設 false
   errorMessage?: string
   readonly?: boolean
-  userId?: number // 用戶 ID
+  userId?: number
+  storeId?: number
   dataTestId?: string
 }
 const props = defineProps<{ inputTextState: InputTextState }>()

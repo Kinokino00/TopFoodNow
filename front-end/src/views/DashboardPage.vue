@@ -22,7 +22,7 @@
               icon: 'fa-solid fa-magnifying-glass',
               iconClass: 'relative -top-px !text-xs md:-top-0.5'
             }"
-            @click="navigateToSearchResults(undefined, true)"
+            @click="navigateToSearchList(undefined, true)"
           />
         </div>
         <div class="flex item-center gap-1 sm:gap-2">
@@ -35,7 +35,7 @@
               label: category.categoryName,
               labelClass: 'text-xs sm:text-sm'
             }"
-            @click="navigateToSearchResults(category.categoryName)"
+            @click="navigateToSearchList(category.categoryName)"
           />
         </div>
       </div>
@@ -60,7 +60,7 @@
             iconRight: 'fa-solid fa-arrow-right',
             iconRightClass: 'ml-1 text-sm'
           }"
-          @click="navigateToSearchResults(undefined, true)"
+          @click="navigateToSearchList(undefined, true)"
         />
       </div>
       <div class="bg-left"></div>
@@ -138,7 +138,7 @@ const fetchCategories = async () => {
  * @param specificTerm 可選的指定搜尋詞。如果提供，則忽略輸入框內容
  * @param forceNoTerm 如果為 true，則無論如何都不會包含 searchTerm 參數
  */
-const navigateToSearchResults = (specificTerm?: string, forceNoTerm: boolean = false) => {
+const navigateToSearchList = (specificTerm?: string, forceNoTerm: boolean = false) => {
   const queryParams: { searchTerm?: string } = {}
 
   if (forceNoTerm) {

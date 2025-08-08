@@ -1,15 +1,10 @@
-import axios from 'axios'
-import type { Store } from '@/types/store'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-
-if (!API_BASE_URL) {
-    console.warn('VITE_API_BASE_URL is not defined. Please check your .env files.');
-}
+// src/services/storeService.ts
+import api from './api'
+import type { Store, StoreDetails } from '@/types/store'
 
 export async function getStoresRandomly(limit: number = 3): Promise<Store[]> {
     try {
-        const response = await axios.get<Store[]>(`${API_BASE_URL}/api/store/random`, {
+        const response = await api.get<Store[]>('/store/random', {
             params: {
                 limit: limit
             }
@@ -17,6 +12,17 @@ export async function getStoresRandomly(limit: number = 3): Promise<Store[]> {
         return response.data
     } catch (error) {
         console.error('Error fetching stores:', error)
+        throw error
+    }
+}
+
+// 新增函式：取得指定店家的詳細資訊
+export async function getStoreDetails(storeId: number): Promise<StoreDetails> {
+    try {
+        const response = await api.get<StoreDetails>(`/store/${storeId}/details`)
+        return response.data
+    } catch (error) {
+        console.error(`Error fetching store details for storeId ${storeId}:`, error)
         throw error
     }
 }

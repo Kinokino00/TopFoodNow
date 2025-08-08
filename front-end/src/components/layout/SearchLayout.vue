@@ -6,7 +6,20 @@
   <div class="bg-left"></div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { defineProps } from 'vue'
+
+defineProps({
+  userId: {
+    type: [String, Number],
+    required: false
+  },
+  storeId: {
+    type: [String, Number],
+    required: false
+  }
+})
+</script>
 
 <style lang="scss" scoped>
 .container {

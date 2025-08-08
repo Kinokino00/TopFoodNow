@@ -76,6 +76,7 @@
               class="input-layout"
               :inputTextState="{
                 modelValue: recommendation.storeName,
+                storeId: recommendation.storeId,
                 layout: 'row',
                 label: '店家名稱:',
                 labelClass: 'input-label',
@@ -217,7 +218,7 @@ const prevImage = () => {
   }
 }
 
-// 獲取分類列表
+// 分類列表
 const fetchCategories = async () => {
   try {
     const data = await getCategories()

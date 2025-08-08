@@ -44,46 +44,11 @@ public interface RecommendRepository extends JpaRepository<RecommendModel, Integ
             @Param("storeId") Integer storeId
     );
 
-    // 用於精確取得用戶對店家的推薦，用於所有推薦詳情頁面
     @Query("SELECT r FROM RecommendModel r " +
             "JOIN FETCH r.user u " +
             "JOIN FETCH r.store s " +
-            "LEFT JOIN FETCH r.categories c " +
-            "WHERE u.id = :userId AND s.id = :storeId")
-    Optional<RecommendModel> findByUserAndStoreIdWithUserAndStoreAndCategories(
-            @Param("userId") Integer userId,
-            @Param("storeId") Integer storeId
-    );
-
-    // 所有推薦分頁 (舊的單關鍵字查詢，現在由 Specification 取代其功能，可以選擇保留或移除)
-    // 為了避免混淆，且因為您現在是想用 Specification 處理多關鍵字搜索，
-    // 我建議您暫時將這個方法註釋掉，以免影響 Specification 的邏輯。
-    /*
-    @Query("SELECT r FROM RecommendModel r " +
-            "JOIN FETCH r.user u " +
-            "JOIN FETCH r.store s " +
-            "LEFT JOIN FETCH r.categories c " + // 確保即使沒有分類也能查詢
-            "WHERE (:searchTerm IS NULL OR :searchTerm = '' OR (" +
-            "       LOWER(u.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) AND " +
-            "       LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) AND " +
-            "       LOWER(s.address) LIKE LOWER(CONCAT('%', :searchTerm, '%')) AND " +
-            "       LOWER(r.reason) LIKE LOWER(CONCAT('%', :searchTerm, '%')) AND " +
-            "       EXISTS (SELECT cat FROM r.categories cat WHERE cat.id = c.id AND LOWER(cat.categoryName) LIKE LOWER(CONCAT('%', :searchTerm, '%')))" +
-            "))")
-    Page<RecommendModel> findFilteredRecommendsWithUserAndStoreAndCategories(
-            @Param("searchTerm") String searchTerm,
-            Pageable pageable
-    );
-    */
-
-    // 取得特定店家按用戶選擇次數排序的分類列表
-    @Query("SELECT new com.example.topfoodnow.dto.CategoryDTO(c.id, c.categoryName) " +
-            "FROM RecommendModel r JOIN r.categories c " +
-            "WHERE r.store.id = :storeId " +
-            "GROUP BY c.id, c.categoryName " +
-            "ORDER BY COUNT(DISTINCT r.user.id) DESC, c.id ASC")
-    List<CategoryDTO> findCategoriesByStorePopularity(@Param("storeId") Integer storeId);
-
+            "ORDER BY FUNCTION('RAND') LIMIT :limit")
+    List<RecommendModel> findRandomRecommends(@Param("limit") int limit);
 
     // 取隨機 3 筆推薦 (此方法返回 RecommendModel，如果需要特定數據才用它)
     @Query(value = "SELECT r.* FROM recommend r " +

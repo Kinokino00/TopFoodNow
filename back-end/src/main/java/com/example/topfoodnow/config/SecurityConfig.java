@@ -88,8 +88,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
-//                        .anyRequest().authenticated()
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
+                        //.anyRequest().permitAll()
                 )
                 // 配置會話管理為無狀態 (適用於 JWT)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
@@ -104,7 +104,7 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // 確保允許的源與您的前端應用保持一致
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:5173", "http://localhost:8080"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:5173", "http://localhost:8080", "http://localhost:8081"));
         // configuration.setAllowedOrigins(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // 允許所有頭部，包括 Authorization

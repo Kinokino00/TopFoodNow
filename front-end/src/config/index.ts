@@ -1,11 +1,9 @@
-// 全域設定
 interface AppConfig {
-    apiBaseUrl: string;
+    apiBaseUrl: string
 }
 
 const config: AppConfig = {
-    // apiBaseUrl: 'http://localhost:8080',
-    apiBaseUrl: 'http://54.253.115.242:8080',
-};
+    apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+}
 
-export default config;
+export default config

@@ -30,6 +30,16 @@ const search: RouteRecordRaw[] = [
             requiresAuth: false
         },
     },
+    {
+        path: '/store/:storeId',
+        name: 'storeRecommendations',
+        component: () => import('@/views/search/StoreRecommendations.vue'),
+        props: true,
+        meta: {
+            title: '店家推薦列表',
+            requiresAuth: false,
+        },
+    },
 ]
 
 export default search

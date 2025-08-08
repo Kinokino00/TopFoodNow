@@ -233,7 +233,7 @@ const pageSizeDropdownState = reactive({
   width: 'w-[60px]'
 })
 
-// 獲取分類列表
+// 分類列表
 const fetchCategories = async () => {
   try {
     const data = await getCategories()
@@ -269,7 +269,7 @@ const getSortOrder = (sortByValue: string | number | string[] | number[] | Objec
   }
 }
 
-// 獲取推薦列表的函數
+// 推薦列表
 const fetchRecommendations = async () => {
   loading.value = true
   error.value = null
@@ -288,8 +288,8 @@ const fetchRecommendations = async () => {
     const response = await getAllRecommendations(params)
     recommendations.value = response.data
     totalPages.value = response.totalPages ?? 1
-    currentPage.value = response.pageable.pageNumber // 從 API 回應獲取當前頁碼
-    pageSize.value = response.pageable.pageSize // 從 API 回應獲取每頁大小
+    currentPage.value = response.pageable.pageNumber // 從 API 回應當前頁碼
+    pageSize.value = response.pageable.pageSize // 從 API 回應每頁大小
     totalElements.value = response.totalElements ?? 0 // 更新總筆數
 
     updateUrlQueryParams()
