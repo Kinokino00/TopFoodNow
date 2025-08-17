@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import PrimeVue from 'primevue/config'
+import { useUserStore } from '@/stores/user'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { fas } from '@fortawesome/free-solid-svg-icons'
@@ -18,4 +19,8 @@ app.use(createPinia())
 app.use(router)
 app.component('font-awesome-icon', FontAwesomeIcon)
 app.use(PrimeVue, { ripple: true  })
+
+const userStore = useUserStore()
+userStore.loadUserData()
+
 app.mount('#app')

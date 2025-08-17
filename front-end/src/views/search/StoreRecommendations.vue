@@ -5,7 +5,7 @@
         {{ storeDetails ? storeDetails.storeName : '' }} 推薦列表
       </h4>
       <div
-        class="flex-col items-center justify-center gap-2 md:flex md:gap-4"
+        class="flex-col items-center justify-center gap-2 md:flex md:gap-3"
         :class="isCategoryOpen ? 'flex' : 'hidden'"
       >
         <div v-if="storeDetailsLoading" class="loading">載入店家資料...</div>

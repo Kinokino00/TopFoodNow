@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import auth from './auth'
 import search from './search'
+import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
+      name: 'Home',
       component: () => import('@/views/DashboardPage.vue'),
       meta: {
         title: 'Dashboard',
@@ -33,16 +34,18 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.meta.requiresAuth) return next()
 
-  // if (!to.meta.requiresAuth) return next()
-  // try {
-  //   // 登入驗證
-  //   const userStore = useUserStore()
-  //   const isAuthenticated = await userStore.isAuthenticated()
-  //   isAuthenticated ? next() : next({ name: 'Login' })
-  // } catch {
-  //   next({ name: 'Login' })
-  // }
-  next()
+  if (to.meta.requiresAuth) {
+    const userStore = useUserStore()
+    const isAuthenticated = await userStore.isAuthenticated()
+
+    if (isAuthenticated) {
+      next()
+    } else {
+      next({ name: 'Login' })
+    }
+  } else {
+    next()
+  }
 })
 
 export default router

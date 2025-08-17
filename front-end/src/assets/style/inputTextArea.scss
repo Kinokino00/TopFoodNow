@@ -9,7 +9,7 @@
   }
 
   input, textarea {
-    @apply w-full text-sm placeholder:text-gray-300 focus:outline-0;
+    @apply w-full text-xs placeholder:text-gray-300 focus:outline-0 md:text-sm;
   }
   textarea {
     @apply -mb-1.5 indent-1 disabled:resize-none;

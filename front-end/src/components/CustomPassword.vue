@@ -32,7 +32,7 @@
         />
       </div>
     </div>
-    <div v-if="state.passwordState.errorMessage" class="flex pl-2">
+    <div v-if="state.passwordState.errorMessage" class="flex md:pl-2">
       <div
         v-if="state.passwordState.layout === 'row' && state.passwordState.label"
         class="mx-2 labelText"

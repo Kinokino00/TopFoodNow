@@ -19,7 +19,7 @@ export async function getStoresRandomly(limit: number = 3): Promise<Store[]> {
 // 新增函式：取得指定店家的詳細資訊
 export async function getStoreDetails(storeId: number): Promise<StoreDetails> {
     try {
-        const response = await api.get<StoreDetails>(`/store/${storeId}/details`)
+        const response = await api.get<StoreDetails>(`/store/details/${storeId}`)
         return response.data
     } catch (error) {
         console.error(`Error fetching store details for storeId ${storeId}:`, error)

@@ -1,13 +1,8 @@
 <template>
-  <div
-    v-if="state.dialogState.visible"
-    class="dialog"
-    :class="state.getDialogClasses"
-  >
+  <div v-if="state.dialogState.visible" class="dialog" :class="state.getDialogClasses">
     <div class="dialog-mask"></div>
-    <div class="dialog-container">
-      <div v-if="state.dialogState.title" class="dialog-header">
-        <p class="font-bold text-2xl">{{ state.dialogState.title }}</p>
+    <div class="dialog-container" :class="state.dialogState.width">
+      <div class="dialog-header">
         <ButtonComponent
           v-if="state.isCloseBtnShow"
           :buttonState="closeBtnState"
@@ -15,20 +10,19 @@
           data-testid="close_dialog_button"
         />
       </div>
-      <form
-        v-if="$slots"
-        @submit.prevent="state.dialogState.onSubmit"
-        class="dialog-form"
-      >
+      <form v-if="$slots" @submit.prevent="state.dialogState.onSubmit" class="dialog-form">
         <ScrollBar>
           <div
             class="dialog-scrollBar"
-            :class="state.dialogState.scrollBarClass || 'max-h-[70vh]'"
+            :class="[
+              state.dialogState.scrollBarClass || 'max-h-[70vh]',
+              { 'mb-5': !state.isCancelBtnShow || !state.isConfirmBtnShow }
+            ]"
           >
-            <slot></slot>
+            <slot />
           </div>
         </ScrollBar>
-        <div class="dialog-footer">
+        <div v-if="state.isCancelBtnShow || state.isConfirmBtnShow" class="dialog-footer">
           <ButtonComponent
             v-if="state.isCancelBtnShow"
             :buttonState="cancelBtnState"
@@ -47,7 +41,6 @@
   </div>
 </template>
 
-
 <script lang="ts" setup>
 import ScrollBar from '@/components/scrollBar/ScrollBar.vue'
 import ButtonComponent from '@/components/CustomButton.vue'
@@ -55,8 +48,8 @@ import { computed, reactive, defineExpose, watchEffect } from 'vue'
 
 export type DialogState = {
   visible: boolean
-  title: string
-  scrollBarClass?: string  // 預設 'max-h-[70vh]'
+  width: string
+  scrollBarClass?: string // 預設 'max-h-[70vh]'
   dialogClass?: string
   routerDialogTitle?: string
   routerDialogText?: string
@@ -66,26 +59,26 @@ export type DialogState = {
   routerQuery?: Object
   routerSubQuery?: Object
   isConfirmDialog?: boolean
-  closeBtn?: boolean    // 預設 true
-  cancelBtn?: boolean   // 預設 true
-  confirmBtn?: boolean  // 預設 true
+  closeBtn?: boolean // 預設 true
+  cancelBtn?: boolean // 預設 true
+  confirmBtn?: boolean // 預設 true
   confirmClick?: Function
   cancelClick?: Function
-  confirmButtonType?: string  // 'button' | 'submit' | 'reset'
+  confirmButtonType?: string // 'button' | 'submit' | 'reset'
   onSubmit?: Function
 }
 const props = defineProps<{ dialogState: DialogState }>()
 const state: any = reactive({
   dialogState: props.dialogState,
   getDialogClasses: computed(() => ({
-    'show': state.dialogState.visible,
-    'hidden': !state.dialogState.visible,
+    show: state.dialogState.visible,
+    hidden: !state.dialogState.visible
   })),
   isCloseBtnShow: computed(() => state.dialogState.closeBtn !== false),
   isCancelBtnShow: computed(() => state.dialogState.cancelBtn !== false),
-  isConfirmBtnShow: computed(() => state.dialogState.confirmBtn !== false),
+  isConfirmBtnShow: computed(() => state.dialogState.confirmBtn !== false)
 })
-watchEffect(() => state.dialogState = props.dialogState)
+watchEffect(() => (state.dialogState = props.dialogState))
 
 const emits = defineEmits(['update:visible'])
 const closeDialog = () => {
@@ -104,17 +97,16 @@ const handleConfirmClick = () => {
 const closeBtnState = reactive({
   color: 'transparent',
   icon: ['fas', 'xmark'],
-  iconClass: 'text-white',
+  iconClass: 'text-gray-500'
 })
 const cancelBtnState = reactive({
   label: '取消',
-  color: 'white',
-  icon: ['fas', 'times'],
+  icon: ['fas', 'times']
 })
 const confirmBtnState = reactive({
   label: '確認',
   color: 'primary',
-  icon: ['fas', 'check'],
+  icon: ['fas', 'check']
 })
 
 defineExpose({
@@ -122,24 +114,33 @@ defineExpose({
 })
 </script>
 
-
 <style lang="scss" scoped>
 .dialog {
-  @apply z-[1000] fixed flex-col items-center justify-center left-0 top-0 w-screen h-screen;
-  box-shadow: 0 1px 2px -1px rgba(0, 0, 0, .1), 0 4px 6px -1px rgba(0, 0, 0, .1);
+  @apply z-[10000] fixed flex-col items-center justify-center left-0 top-0 w-screen h-screen;
+  box-shadow:
+    0 1px 2px -1px rgba(0, 0, 0, 0.1),
+    0 4px 6px -1px rgba(0, 0, 0, 0.1);
   &.show {
     @apply opacity-100;
-    animation: showOpacity .1s ease-in-out;
+    animation: showOpacity 0.1s ease-in-out;
     @keyframes showOpacity {
-      0%  { @apply opacity-0; }
-      100%{ @apply opacity-100; }
+      0% {
+        @apply opacity-0;
+      }
+      100% {
+        @apply opacity-100;
+      }
     }
   }
   &.hidden {
-    animation: hiddenOpacity .2s ease-in-out;
+    animation: hiddenOpacity 0.2s ease-in-out;
     @keyframes hiddenOpacity {
-      0%  { @apply opacity-100; }
-      100%{ @apply opacity-0; }
+      0% {
+        @apply opacity-100;
+      }
+      100% {
+        @apply opacity-0;
+      }
     }
   }
 
@@ -157,7 +158,7 @@ defineExpose({
     @apply px-3 space-y-2 max-h-[50vh];
   }
   &-header {
-    @apply flex items-center justify-between p-4 bg-primary-400 text-white;
+    @apply flex justify-end p-3;
   }
   &-footer {
     @apply flex items-center justify-center gap-4 pt-4;

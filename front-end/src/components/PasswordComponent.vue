@@ -1,16 +1,7 @@
 <template>
   <div>
-    <div
-      :class="[
-        'component-' + state.getLayout,
-        state.passwordState.width
-      ]"
-    >
-      <p
-        v-if="state.passwordState.label"
-        class="labelText"
-        :class="state.getLabelClass"
-      >
+    <div :class="['component-' + state.getLayout, state.passwordState.width]">
+      <p v-if="state.passwordState.label" class="labelText" :class="state.getLabelClass">
         {{ state.passwordState.label }}
       </p>
       <div class="inputDiv" :class="[state.getClasses, state.passwordState.inputDivClass]">
@@ -23,7 +14,7 @@
         />
       </div>
     </div>
-    <div class="flex pl-2" v-if="state.passwordState.errorMessage">
+    <div class="flex md:pl-2" v-if="state.passwordState.errorMessage">
       <div
         v-if="state.passwordState.layout === 'row' && state.passwordState.label"
         class="mx-2 labelText"
@@ -33,7 +24,6 @@
     </div>
   </div>
 </template>
-
 
 <script setup lang="ts">
 import { reactive, computed, watchEffect } from 'vue'
@@ -52,12 +42,12 @@ export type PasswordState = {
 const props = defineProps<{ passwordState: PasswordState }>()
 const state: any = reactive({
   passwordState: props.passwordState,
-  getLayout: computed(() => state.passwordState.layout ? state.passwordState.layout : 'col'),
+  getLayout: computed(() => (state.passwordState.layout ? state.passwordState.layout : 'col')),
   getClasses: computed(() => ({
-    'inputDivError': state.passwordState.errorMessage
+    inputDivError: state.passwordState.errorMessage
   })),
   getLabelClass: computed(() => {
-    const defaultClass = 'min-w-[100px]';
+    const defaultClass = 'min-w-[100px]'
     const labelClass = state.passwordState.labelClass || ''
     if (labelClass.includes('text-end')) {
       return `flex items-center justify-end gap-1 ${labelClass}`
@@ -65,9 +55,8 @@ const state: any = reactive({
     return labelClass ? labelClass : defaultClass
   })
 })
-watchEffect(() => state.passwordState = props.passwordState)
+watchEffect(() => (state.passwordState = props.passwordState))
 </script>
-
 
 <style lang="scss">
 .p-password {
@@ -75,7 +64,7 @@ watchEffect(() => state.passwordState = props.passwordState)
 }
 .p-password-input {
   @apply pr-0 w-full overflow-hidden focus-within:shadow-none;
-  &~svg {
+  & ~ svg {
     @apply -mr-2.5;
   }
 }

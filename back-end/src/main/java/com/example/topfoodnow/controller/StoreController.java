@@ -43,12 +43,12 @@ public class StoreController {
         return ResponseEntity.ok(stores);
     }
 
-    @Operation(summary = "取得指定店家的詳細資訊", description = "返回指定店家的名稱、地址、平均評分和分類名稱列表")
+    @Operation(summary = "取得指定店家的詳細資訊 (無須認證)", description = "返回指定店家的名稱、地址、平均評分和分類名稱列表")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "成功取得店家詳細資訊"),
         @ApiResponse(responseCode = "404", description = "未找到指定店家")
     })
-    @GetMapping("/{storeId}/details")
+    @GetMapping("/details/{storeId}")
     public ResponseEntity<StoreDetailDTO> getStoreDetails(@PathVariable Integer storeId) {
         logger.info("請求取得店家 ID: {} 的詳細資訊。", storeId);
         try {

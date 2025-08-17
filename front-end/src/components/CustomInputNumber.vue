@@ -32,7 +32,7 @@
         />
       </div>
     </div>
-    <div v-if="state.inputNumberState.errorMessage" class="flex pl-2">
+    <div v-if="state.inputNumberState.errorMessage" class="flex md:pl-2">
       <div
         v-if="state.inputNumberState.layout === 'row' && state.inputNumberState.label"
         class="mx-2 labelText"

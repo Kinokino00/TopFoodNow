@@ -1,31 +1,24 @@
 <template>
   <div class="p-3">
-    <CustomButton
-      :buttonState="buttonState"
-      @click="dialogState.isDialogShow"
-    />
-    <CustomDropdown :dropdownState="dropdownState"/>
-    <CustomInputText :inputTextState="inputTextState"/>
-    <CustomInputNumber :inputNumberState="inputNumberState"/>
-    <CustomPassword :passwordState="passwordState"/>
-    <DatePickerComponent :datePickerState="datePickerState"/>
-    <CustomTextarea :textareaState="textareaState"/>
-    <CustomSwitch :switchState="switchState"/>
-    <CustomUpload :uploadState="uploadState"/>
-    <CustomCheckbox :checkboxState="checkboxState"/>
-    <CustomRadio :radioState="radioState"/>
-    <CustomTooltip :tooltipState="tooltipState"/>
-    <CustomToast :toastState="toastState"/>
-    
+    <CustomButton :buttonState="buttonState" @click="dialogState.isDialogShow" />
+    <CustomDropdown :dropdownState="dropdownState" />
+    <CustomInputText :inputTextState="inputTextState" />
+    <CustomInputNumber :inputNumberState="inputNumberState" />
+    <CustomPassword :passwordState="passwordState" />
+    <DatePickerComponent :datePickerState="datePickerState" />
+    <CustomTextarea :textareaState="textareaState" />
+    <CustomSwitch :switchState="switchState" />
+    <CustomUpload :uploadState="uploadState" />
+    <CustomCheckbox :checkboxState="checkboxState" />
+    <CustomRadio :radioState="radioState" />
+    <CustomTooltip :tooltipState="tooltipState" />
+    <CustomToast :toastState="toastState" />
+
     <CustomDialog :dialogState="dialogState">
-      <CustomPassword
-        v-for="(_, i) in 10" :key="i"
-        :passwordState="passwordState2"
-      />
+      <CustomPassword v-for="(_, i) in 10" :key="i" :passwordState="passwordState2" />
     </CustomDialog>
   </div>
 </template>
-
 
 <script lang="ts" setup>
 import { reactive } from 'vue'
@@ -45,7 +38,7 @@ import CustomToast from '@/components/CustomToast.vue'
 import CustomDialog from '@/components/CustomDialog.vue'
 
 const buttonState = reactive({
-  label: 'Show Dialog',
+  label: 'Show Dialog'
 })
 const dropdownState = reactive({
   label: 'dropdown',
@@ -54,27 +47,27 @@ const dropdownState = reactive({
     { name: '選項22', value: '2', checked: true },
     { name: '選項333', value: '3', checked: false },
     { name: '選項4', value: '4', checked: false },
-    { name: '選項5', value: '5', checked: false },
+    { name: '選項5', value: '5', checked: false }
   ],
-  width: 'w-[220px]',
+  width: 'w-[220px]'
 })
 const inputTextState = reactive({
   modelValue: '文字內容',
-  label: 'inputText',
+  label: 'inputText'
 })
 const inputNumberState = reactive({
   modelValue: 11,
-  label: 'inputNumber',
+  label: 'inputNumber'
 })
 const passwordState = reactive({
   modelValue: 'TEST',
   label: 'password',
-  labelClass: 'min-w-[120px]',
+  labelClass: 'min-w-[120px]'
 })
 const datePickerState = reactive({
   modelValue: new Date(),
   label: '日期',
-  type: 'season',
+  type: 'season'
 })
 const textareaState = reactive({
   modelValue: '',
@@ -114,7 +107,7 @@ const uploadState = reactive({
 
     try {
       const fileHandle = await uploadState.folderHandle.getFileHandle(uploadState.modelValue, {
-        create: true,
+        create: true
       })
       const writable = await fileHandle.createWritable()
       const blob = await fetch(uploadState.downloadUrl).then((res) => res.blob())
@@ -137,26 +130,25 @@ const radioState = reactive({
   value: [
     { name: 'radio1', value: 1 },
     { name: 'radio2', value: 2 },
-    { name: 'radio3', value: 3 },
-  ],
+    { name: 'radio3', value: 3 }
+  ]
 })
 const tooltipState = reactive({
   label: '當前方案',
   labelBold: '實際',
   subLabel: '用量',
-  tooltipLabel: "currentElectricityPrice"
+  tooltipLabel: 'currentElectricityPrice'
 })
 const toastState = reactive({
   visible: false,
   color: 'success',
-  label: '成功',
+  label: '成功'
 })
 const dialogState = reactive({
-  isDialogShow: () => dialogState.visible = !dialogState.visible,
+  isDialogShow: () => (dialogState.visible = !dialogState.visible),
   visible: false,
-  title: '標題',
-  cancelClick: () => dialogState.visible = false,
-  confirmClick: () => dialogState.visible = false,
+  cancelClick: () => (dialogState.visible = false),
+  confirmClick: () => (dialogState.visible = false)
 })
 const passwordState2 = reactive({
   modelValue: 'TEST',

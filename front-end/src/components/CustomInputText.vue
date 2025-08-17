@@ -22,7 +22,7 @@
               ? { name: 'userRecommendations', params: { userId: state.inputTextState.userId } }
               : { name: 'storeRecommendations', params: { storeId: state.inputTextState.storeId } }
           "
-          class="text-secondary-700 cursor-pointer hover:underline"
+          class="text-underline"
         >
           {{ state.inputTextState.modelValue }}
         </RouterLink>
@@ -41,7 +41,7 @@
         />
       </div>
     </div>
-    <div v-if="state.inputTextState.errorMessage" class="flex pl-2">
+    <div v-if="state.inputTextState.errorMessage" class="flex md:pl-2">
       <div
         v-if="state.inputTextState.layout === 'row' && state.inputTextState.label"
         class="mx-2 labelText"

@@ -18,6 +18,24 @@ const auth: RouteRecordRaw[] = [
             title: '註冊',
             requiresAuth: false
         }
+    },
+    {
+        path: '/verify',
+        name: 'VerifyAccount',
+        component: () => import('@/views/auth/VerifyAccountPage.vue'),
+        meta: {
+            title: '驗證帳戶',
+            requiresAuth: false
+        }
+    },
+    {
+        path: '/forgot-password',
+        name: 'ForgotPassword',
+        component: () => import('@/views/auth/ForgotPassword.vue'),
+        meta: {
+            title: '忘記密碼',
+            requiresAuth: false
+        }
     }
 ]
 

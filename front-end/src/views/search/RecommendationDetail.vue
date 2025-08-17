@@ -1,5 +1,15 @@
 <template>
   <SearchLayout>
+    <!-- <CustomButton
+      v-if="isCurrentUser"
+      class="py-1.5 px-2 md:py-2 md:px-3"
+      :buttonState="{
+        color: 'secondary',
+        label: '編輯',
+        labelClass: 'text-xs md:text-base'
+      }"
+      @click="editDialogState.visible = true"
+    /> -->
     <div class="area gap-3 pr-0.5 pb-3">
       <ScrollBar
         class="py-1 pl-1 pr-3 max-h-[calc(100vh-108px)] sm:max-h-[calc(100vh-116px)] md:max-h-[calc(100vh-144px)]"
@@ -165,8 +175,7 @@ import { useRoute } from 'vue-router'
 import ScrollBar from '@/components/scrollBar/ScrollBar.vue'
 import SearchLayout from '@/components/layout/SearchLayout.vue'
 import CustomInputText from '@/components/CustomInputText.vue'
-import CustomCheckbox from '@/components/CustomCheckbox.vue'
-import CustomTextarea from '@/components/CustomTextarea.vue'
+import CustomButton from '@/components/CustomButton.vue'
 import { getRecommendationByUserIdAndStoreId as fetchRecommendationDetail } from '@/services/recommendService'
 import type { RecommendItem } from '@/types/recommend'
 import type { Categories } from '@/types/categories'

@@ -1,33 +1,26 @@
 import axios from 'axios'
-import { getToken } from '@/utils/auth'
+import { useUserStore } from '@/stores/user'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-
-if (!API_BASE_URL) {
-  console.warn('VITE_API_BASE_URL is not defined. Please check your .env files.')
-}
+if (!API_BASE_URL) console.warn('VITE_API_BASE_URL is not defined')
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-  },
+    'Content-Type': 'application/json'
+  }
 })
+
+// 不需要認證的 API
+const publicApiEndpoints = ['/auth/login', '/auth/logout', '/auth/public/', '/categories', '/store/', '/recommend/'] 
 
 api.interceptors.request.use(
   (config) => {
-    const isAuthRequired = !(
-      config.url?.includes('/auth/public/') ||
-      config.url?.match(/\/recommend\/\d+\/\d+$/) ||
-      config.url?.match(/\/recommend\/user\/\d+$/)
-    )
+    const userStore = useUserStore()
+    const token = userStore.token
 
-    if (isAuthRequired) {
-      const token = getToken()
-      if (token) config.headers.Authorization = `Bearer ${token}`
-    }
+    const isPublic = publicApiEndpoints.some(endpoint => config.url?.startsWith(endpoint))
+    if (token && !isPublic) config.headers.Authorization = `Bearer ${token}`
     return config
   },
   (error) => Promise.reject(error)

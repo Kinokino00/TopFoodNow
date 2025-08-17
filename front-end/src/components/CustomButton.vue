@@ -70,7 +70,7 @@ watchEffect(() => (state.buttonState = props.buttonState))
     @apply py-3 text-base font-bold leading-4;
   }
   &-md {
-    @apply h-[30px] py-[7px] text-sm font-normal leading-3;
+    @apply h-[30px] py-[7px] text-xs font-normal leading-3 md:text-sm;
   }
 
   &-primary {

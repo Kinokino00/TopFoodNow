@@ -11,8 +11,33 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
+      # 建置後端 JAR 檔案
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+      - name: Build with Maven
+        run: mvn -f ./back-end/pom.xml clean package
+
+      # 登入 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      # 建置並推送到 Docker Hub
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/topfoodnow:latest
+
+      # 透過 SSH 連線到 EC2 並部署
       - name: SSH and deploy to EC2
         uses: appleboy/ssh-action@master
         with:
@@ -20,7 +45,17 @@ jobs:
           username: ${{ secrets.TOPFOODNOW_EC2_USERNAME }}
           key: ${{ secrets.TOPFOODNOW_EC2_KEY }}
           script: |
+            # 遠端伺服器上的部署腳本
             cd /home/ubuntu/topfoodnow-develop
-            git pull origin develop
-            docker-compose up -d --build
+
+            # 從 Docker Hub 拉取最新的映像檔
+            sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/topfoodnow:latest
+
+            # 停止並刪除舊容器，然後使用 docker-compose 啟動新容器
+            sudo docker-compose down
+            sudo docker-compose up -d
+
+            # 清理舊的 Docker 資源
             docker system prune -f
+
+            echo "Deployment successful!"

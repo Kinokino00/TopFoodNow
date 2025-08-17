@@ -18,7 +18,18 @@ const search: RouteRecordRaw[] = [
         meta: {
             title: '推薦詳細資訊',
             requiresAuth: false
-        }
+        },
+        children: [
+            {
+                path: 'edit',
+                name: 'recommendationEdit',
+                component: () => import('@/views/search/RecommendationDetail.vue'),
+                meta: {
+                    title: '編輯推薦資訊',
+                    requiresAuth: true
+                }
+            }
+        ]
     },
     {
         path: '/user/:userId/recommendations',

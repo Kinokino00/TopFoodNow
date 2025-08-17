@@ -63,7 +63,7 @@
     </div>
   </Teleport>
 
-  <div class="flex pl-2" v-if="props.dropdownState.errorMessage">
+  <div class="flex md:pl-2" v-if="props.dropdownState.errorMessage">
     <div
       v-if="props.dropdownState.layout === 'row' && props.dropdownState.label"
       class="mx-2 labelText"

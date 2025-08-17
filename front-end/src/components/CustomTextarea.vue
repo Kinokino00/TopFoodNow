@@ -18,7 +18,7 @@
         />
       </div>
     </div>
-    <div class="flex pl-2" v-if="state.textareaState.errorMessage">
+    <div class="flex md:pl-2" v-if="state.textareaState.errorMessage">
       <div
         v-if="state.textareaState.layout === 'row' && state.textareaState.label"
         class="mx-2 labelText"

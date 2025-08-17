@@ -72,7 +72,7 @@ public class UserServiceImpl implements UserService {
      * @return 保存後的用戶模型
      */
     @Override
-    @Transactional // 添加事務管理
+    @Transactional
     public UserModel save(UserModel user) {
         return userRepository.save(user);
     }

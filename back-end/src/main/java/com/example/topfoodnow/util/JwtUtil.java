@@ -24,6 +24,7 @@ public class JwtUtil {
 
     // 生成密鑰
     private SecretKey getSigningKey() {
+        // 將 Base64 編碼的密鑰字串解析成位元組陣列
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
