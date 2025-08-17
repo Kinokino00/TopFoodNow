@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,13 +29,24 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
+      # 確保在建置映像檔之前，機密檔案已經存在
+      - name: Create GCS Key File
+        run: echo "${{ secrets.GCS_KEY_JSON }}" > back-end/src/main/resources/gcs-key.json
+
       # 建置並推送到 Docker Hub
-      - name: Build and push Docker image
+      - name: Build and push backend Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./
+          context: ./back-end
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/topfoodnow:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/topfoodnow-backend:latest
+
+      - name: Build and push frontend Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./front-end # 指定前端的 Dockerfile 路徑
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/topfoodnow-frontend:latest
 
       # 透過 SSH 連線到 EC2 並部署
       - name: SSH and deploy to EC2
@@ -45,17 +56,15 @@ jobs:
           username: ${{ secrets.TOPFOODNOW_EC2_USERNAME }}
           key: ${{ secrets.TOPFOODNOW_EC2_KEY }}
           script: |
-            # 遠端伺服器上的部署腳本
             cd /home/ubuntu/topfoodnow-develop
 
-            # 從 Docker Hub 拉取最新的映像檔
-            sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/topfoodnow:latest
-
-            # 停止並刪除舊容器，然後使用 docker-compose 啟動新容器
+            # 停止並移除舊容器
             sudo docker-compose down
-            sudo docker-compose up -d
 
-            # 清理舊的 Docker 資源
-            docker system prune -f
+            # 拉取最新映像檔
+            sudo docker-compose pull
+
+            # 使用最新的映像檔啟動新容器
+            sudo docker-compose up -d --force-recreate
 
             echo "Deployment successful!"
