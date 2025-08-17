@@ -8,8 +8,8 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-		"gcp.storage.credentials.location=classpath:test-gcs-key.json", // 假路徑
-		"spring.cloud.gcp.project-id=test-project-id" // 假專案ID
+		"gcp.storage.credentials.location=classpath:test-gcs-key.json", // 假的路徑
+		"spring.cloud.gcp.project-id=test-project-id" // 假的專案ID
 })
 class TopfoodnowApplicationTests {
 	@Test
