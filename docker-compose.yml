@@ -3,21 +3,19 @@ version: '3.8'
 services:
   backend:
     image: ${DOCKER_HUB_USERNAME}/topfoodnow-backend:latest
-    build: ./back-end
+    # build: ./back-end
     container_name: topfoodnow_backend
     restart: always
     ports:
       - "8080:8080"
-    env_file:
-      - .env
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://topfoodnow-db.czm2ykk8gv7r.ap-southeast-2.rds.amazonaws.com:3306/mydb?zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Taipei&useSSL=false
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcs-key.json
       - REDIS_HOST=redis
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_USERNAME=admin
-      - SPRING_DATASOURCE_PASSWORD=Aa123456
-      - APP_BASE_URL=http://54.253.115.242:4000/
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - APP_BASE_URL=${APP_BASE_URL}
     depends_on:
       - redis
     networks:
@@ -25,7 +23,7 @@ services:
 
   frontend:
     image: ${DOCKER_HUB_USERNAME}/topfoodnow-frontend:latest
-    build: ./front-end
+    # build: ./front-end
     container_name: topfoodnow_frontend
     restart: always
     ports:

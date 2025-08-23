@@ -56,7 +56,12 @@ jobs:
           username: ${{ secrets.TOPFOODNOW_EC2_USERNAME }}
           key: ${{ secrets.TOPFOODNOW_EC2_KEY }}
           script: |
+            # 建立專案目錄
+            mkdir -p /home/ubuntu/topfoodnow-develop
             cd /home/ubuntu/topfoodnow-develop
+
+            # 建立憑證檔案
+            echo "${{ secrets.GCS_KEY_JSON }}" | base64 --decode > /home/ubuntu/gcs-key.json
 
             # 停止並移除舊容器
             sudo docker-compose down
@@ -64,7 +69,14 @@ jobs:
             # 拉取最新映像檔
             sudo docker-compose pull
 
-            # 使用最新的映像檔啟動新容器
-            sudo docker-compose up -d --force-recreate
+            # 使用 GitHub Secrets 傳入的環境變數來啟動容器
+            sudo DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }} \
+                 RDS_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }} \
+                 RDS_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }} \
+                 APP_BASE_URL=${{ secrets.APP_BASE_URL }} \
+                 JWT_SECRET=${{ secrets.JWT_SECRET }} \
+                 JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} \
+                 GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/gcs-key.json \
+                 docker-compose up -d --force-recreate
 
             echo "Deployment successful!"
