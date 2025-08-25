@@ -56,36 +56,13 @@ jobs:
           username: ${{ secrets.TOPFOODNOW_EC2_USERNAME }}
           key: ${{ secrets.TOPFOODNOW_EC2_KEY }}
           script: |
-            sudo sh -c '
-              # 1. 確保乾淨的工作目錄
-              if [ -d "/home/azureuser/TopFoodNow" ]; then
-                rm -rf /home/azureuser/TopFoodNow
-              fi
-              
-              # 2. 複製最新的專案
-              git clone https://github.com/Kinokino00/TopFoodNow.git /home/azureuser/TopFoodNow
-              
-              # 3. 進入專案目錄
-              cd /home/azureuser/TopFoodNow
-              
-              # 4. 在 VM 上建立環境變數檔案
-              echo "APP_BASE_URL=${{ secrets.APP_BASE_URL }}" > .env
-              echo "DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}" >> .env
-              echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
-              echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
-              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-              echo "JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }}" >> .env
-              
-              # 5. 複製並設置 GCS 金鑰
-              echo "GOOGLE_APPLICATION_CREDENTIALS=./gcs-key.json" >> .env
-              echo "${{ secrets.GCS_KEY_JSON }}" > gcs-key.json
-              
-              # 6. 停止並移除舊的容器
-              /usr/bin/docker compose -f docker-compose.yml --env-file ./.env down
-              
-              # 7. 拉取最新的 Docker 鏡像
-              /usr/bin/docker compose -f docker-compose.yml --env-file ./.env pull
-              
-              # 8. 啟動容器
-              /usr/bin/docker compose -f docker-compose.yml --env-file ./.env up -d --force-recreate
-            '
+            # 1. 進入專案目錄
+            cd /home/azureuser/TopFoodNow
+
+            # 2. 拉取最新的 Docker 映像
+            # 注意：這裡的 docker compose 已經會自動使用當前目錄下的 .env 檔案
+            sudo docker compose pull
+
+            # 3. 停止並移除舊的容器，並啟動新的容器
+            sudo docker compose down
+            sudo docker compose up -d
