@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 # 設置工作目錄
 WORKDIR /app
 
-# 將 package.json 和 pnpm-lock.yaml 複製到工作目錄，有助於利用 Docker 的緩存機制
+# 將 package.json 和 pnpm-lock.yaml 複製到工作目錄，有助於利用 Docker 緩存機制
 COPY package.json pnpm-lock.yaml ./
 
 # 安裝 pnpm
