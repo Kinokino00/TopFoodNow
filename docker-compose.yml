@@ -3,7 +3,6 @@ version: '3.8'
 services:
   backend:
     image: ${DOCKER_HUB_USERNAME}/topfoodnow-backend:latest
-    # build: ./back-end
     container_name: topfoodnow_backend
     restart: always
     ports:
@@ -23,7 +22,6 @@ services:
 
   frontend:
     image: ${DOCKER_HUB_USERNAME}/topfoodnow-frontend:latest
-    # build: ./front-end
     container_name: topfoodnow_frontend
     restart: always
     ports:

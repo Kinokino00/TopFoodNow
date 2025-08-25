@@ -44,47 +44,48 @@ jobs:
       - name: Build and push frontend Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./front-end # 指定前端的 Dockerfile 路徑
+          context: ./front-end
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/topfoodnow-frontend:latest
 
-      # 透過 SSH 連線到 Azure VM 並部署
-      - name: SSH and deploy to Azure
+      # --- SSH 部署到 Azure VM ---
+      - name: Deploy to Azure VM
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.TOPFOODNOW_EC2_HOST }}
           username: ${{ secrets.TOPFOODNOW_EC2_USERNAME }}
           key: ${{ secrets.TOPFOODNOW_EC2_KEY }}
           script: |
-            # 1. 在 VM 上複製或更新 GitHub 專案
-            if [ -d "/home/azureuser/TopFoodNow" ]; then
-              echo "Project directory exists. Pulling latest changes."
-              cd /home/azureuser/TopFoodNow
-              git pull origin develop
-            else
-              echo "Project directory does not exist. Cloning repository."
+            sudo sh -c '
+              # 1. 確保乾淨的工作目錄
+              if [ -d "/home/azureuser/TopFoodNow" ]; then
+                rm -rf /home/azureuser/TopFoodNow
+              fi
+              
+              # 2. 複製最新的專案
               git clone https://github.com/Kinokino00/TopFoodNow.git /home/azureuser/TopFoodNow
+              
+              # 3. 進入專案目錄
               cd /home/azureuser/TopFoodNow
-            fi
-
-            # 2. 寫入 GCS 金鑰檔案
-            echo "${{ secrets.GCS_KEY_JSON }}" | sudo tee /home/azureuser/gcs-key.json > /dev/null
-            sudo chmod 600 /home/azureuser/gcs-key.json
-
-            # 3. 停止並移除舊的容器
-            sudo docker compose down
-
-            # 4. 拉取最新的 Docker 鏡像
-            sudo docker compose pull
-
-            # 5. 使用 GitHub Secrets 傳入環境變數並啟動容器
-            sudo APP_BASE_URL=${{ secrets.APP_BASE_URL }} \
-                DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }} \
-                RDS_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }} \
-                RDS_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }} \
-                JWT_SECRET=${{ secrets.JWT_SECRET }} \
-                JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} \
-                GOOGLE_APPLICATION_CREDENTIALS=/home/azureuser/gcs-key.json \
-                docker compose up -d --force-recreate
-
-            echo "Deployment successful!"
+              
+              # 4. 在 VM 上建立環境變數檔案
+              echo "APP_BASE_URL=${{ secrets.APP_BASE_URL }}" > .env
+              echo "DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}" >> .env
+              echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
+              echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
+              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+              echo "JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }}" >> .env
+              
+              # 5. 複製並設置 GCS 金鑰
+              echo "GOOGLE_APPLICATION_CREDENTIALS=./gcs-key.json" >> .env
+              echo "${{ secrets.GCS_KEY_JSON }}" > gcs-key.json
+              
+              # 6. 停止並移除舊的容器
+              /usr/bin/docker compose -f docker-compose.yml --env-file ./.env down
+              
+              # 7. 拉取最新的 Docker 鏡像
+              /usr/bin/docker compose -f docker-compose.yml --env-file ./.env pull
+              
+              # 8. 啟動容器
+              /usr/bin/docker compose -f docker-compose.yml --env-file ./.env up -d --force-recreate
+            '
