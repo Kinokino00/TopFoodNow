@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 public class MailServiceImpl implements MailService {
     private final JavaMailSender mailSender;
 
-    @Value("${app.base-url}")
+    @Value("${app.front-end-url}")
     private String appBaseUrl;
 
     @Value("${spring.mail.username}")

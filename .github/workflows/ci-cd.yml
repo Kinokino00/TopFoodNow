@@ -13,7 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 建置後端 JAR 檔案
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -22,18 +21,15 @@ jobs:
       - name: Build with Maven
         run: mvn -f ./back-end/pom.xml clean package
 
-      # 登入 Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      # 確保在建置映像檔之前，機密檔案已經存在
       - name: Create GCS Key File
         run: echo "${{ secrets.GCS_KEY_JSON }}" > back-end/src/main/resources/gcs-key.json
 
-      # 建置並推送到 Docker Hub
       - name: Build and push backend Docker image
         uses: docker/build-push-action@v4
         with:
@@ -47,8 +43,9 @@ jobs:
           context: ./front-end
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/topfoodnow-frontend:latest
+          build-args: |
+            VITE_API_BASE_URL=${{ secrets.APP_BACK_END_URL }}
 
-      # --- SSH 部署到 Azure VM ---
       - name: Deploy to Azure VM
         uses: appleboy/ssh-action@master
         with:
@@ -56,13 +53,7 @@ jobs:
           username: ${{ secrets.TOPFOODNOW_EC2_USERNAME }}
           key: ${{ secrets.TOPFOODNOW_EC2_KEY }}
           script: |
-            # 1. 進入專案目錄
             cd /home/azureuser/TopFoodNow
-
-            # 2. 拉取最新的 Docker 映像
-            # 注意：這裡的 docker compose 已經會自動使用當前目錄下的 .env 檔案
-            sudo docker compose pull
-
-            # 3. 停止並移除舊的容器，並啟動新的容器
             sudo docker compose down
+            sudo docker compose pull
             sudo docker compose up -d

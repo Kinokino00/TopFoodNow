@@ -28,7 +28,7 @@ import java.io.IOException;
 public class UserServiceImpl implements UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
-    @Value("${app.base-url}")
+    @Value("${app.front-end-url}")
     private String appBaseUrl;
 
     @Autowired

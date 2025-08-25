@@ -1,6 +1,8 @@
 # 使用 Node.js 20-alpine 作為構建環境，它是一個輕量級的 Linux 發行版
 FROM node:20-alpine AS builder
 
+ARG VITE_API_BASE_URL
+
 # 設置工作目錄
 WORKDIR /app
 
@@ -18,6 +20,7 @@ COPY . .
 
 # 運行構建命令，生成靜態檔案
 RUN pnpm run build
+RUN echo "VITE_API_BASE_URL=${VITE_API_BASE_URL}" > .env.production
 
 # 階段二：使用一個輕量級的 Nginx 伺服器來運行靜態檔案
 FROM nginx:stable-alpine

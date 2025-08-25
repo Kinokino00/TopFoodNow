@@ -4,6 +4,7 @@ import com.example.topfoodnow.model.UserModel;
 import com.example.topfoodnow.repository.UserRepository;
 import com.example.topfoodnow.filter.JwtRequestFilter;
 import com.example.topfoodnow.filter.DebugCorsFilter;
+import org.springframework.core.env.Environment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -36,14 +37,15 @@ import java.util.Optional;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     private final UserRepository userRepository;
-    private final CorsConfigurationSource corsConfigurationSource;
+//    private final CorsConfigurationSource corsConfigurationSource;
     private final DebugCorsFilter debugCorsFilter;
+    private final Environment environment;
 
-    public SecurityConfig(UserRepository userRepository, CorsConfigurationSource corsConfigurationSource,
-                          DebugCorsFilter debugCorsFilter) {
+    public SecurityConfig(UserRepository userRepository, DebugCorsFilter debugCorsFilter, Environment environment) {
         this.userRepository = userRepository;
-        this.corsConfigurationSource = corsConfigurationSource;
+//        this.corsConfigurationSource = corsConfigurationSource;
         this.debugCorsFilter = debugCorsFilter;
+        this.environment = environment;
     }
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -78,7 +80,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtRequestFilter jwtRequestFilter) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/store/**").permitAll()
@@ -102,6 +104,7 @@ public class SecurityConfig {
 
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
+        String frontEndUrl = environment.getProperty("app.front-end-url", "http://localhost:4000");
         CorsConfiguration configuration = new CorsConfiguration();
         // 確保允許的源與您的前端應用保持一致
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:5173", "http://localhost:8080", "http://localhost:8081"));

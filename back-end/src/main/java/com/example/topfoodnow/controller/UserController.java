@@ -49,7 +49,7 @@ import java.io.IOException;
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    @Value("${app.base-url}")
+    @Value("${app.front-end-url}")
     private String appBaseUrl;
 
     private final UserService userService;
