@@ -7,32 +7,27 @@ services:
       - "8080:8080"
     env_file:
       - ./.env
-    # environment:
-    #   - SPRING_DATASOURCE_URL=jdbc:mysql://topfoodnow-db.czm2ykk8gv7r.ap-southeast-2.rds.amazonaws.com:3306/mydb?zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Taipei&useSSL=false
-    #   - REDIS_HOST=redis
-    #   - SPRING_PROFILES_ACTIVE=prod
-    #   - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-    #   - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
-    #   - JWT_SECRET=${JWT_SECRET}
-    #   - APP_FRONT_END_URL=${APP_FRONT_END_URL}
-    #   - APP_BACK_END_URL=${APP_BACK_END_URL}
     depends_on:
       - redis
     networks:
       - topfoodnow_network
+    entrypoint: java -jar /app/app.jar
 
   frontend:
     image: ${DOCKER_HUB_USERNAME}/topfoodnow-frontend:latest
+    build: ./front-end
     container_name: topfoodnow_frontend
     restart: always
     ports:
       - "4000:80"
     volumes:
-      - /etc/localtime:/etc/localtime:ro
+      - frontend_data:/app/dist
     depends_on:
       - backend
     networks:
       - topfoodnow_network
+    environment:
+      - VITE_API_BASE_URL=http://57.158.25.6/api/
 
   redis:
     image: redis:alpine
@@ -45,9 +40,25 @@ services:
     networks:
       - topfoodnow_network
 
+nginx:
+  image: nginx:alpine
+  container_name: topfoodnow_nginx
+  restart: always
+  ports:
+    - "80:80"
+  volumes:
+    - ../nginx.conf:/etc/nginx/nginx.conf:ro
+    - frontend_data:/usr/share/nginx/html
+  depends_on:
+    - frontend
+    - backend
+  networks:
+    - topfoodnow_network
+
 networks:
   topfoodnow_network:
     driver: bridge
 
 volumes:
   redis_data:
+  frontend_data:

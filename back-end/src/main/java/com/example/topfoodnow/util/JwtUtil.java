@@ -5,52 +5,50 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+
 import javax.crypto.SecretKey;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Date;
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.function.Function;
 
 @Component
 public class JwtUtil {
-    @Value("${jwt.secret}")
+
+    @Value("${jwt.secret:defaultSecret}")
     private String secret;
 
-    @Value("${jwt.expiration}")
-    private long expiration; // 以毫秒為單位
+    // 過期時間直接寫死（這裡是 24 小時）
+    private static final long EXPIRATION = 1000 * 60 * 60 * 24;
 
     // 生成密鑰
     private SecretKey getSigningKey() {
-        // 將 Base64 編碼的密鑰字串解析成位元組陣列
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secret);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (IllegalArgumentException e) {
+            // 如果不是 Base64，就 fallback 成普通字串
+            return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
-    // 從 token 中提取電子郵件 (用戶名)
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // 從 token 中提取過期日期
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    // 從 token 中提取 JTI (JWT ID)
     public String extractJti(String token) {
         return extractClaim(token, Claims::getId);
     }
 
-    // 從 token 中提取單個聲明
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    // 從 token 中提取所有聲明 (解析 JWT)
     public Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -59,31 +57,28 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    // 檢查 token 是否過期
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    // 生成 token
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, userDetails.getUsername());
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
-        String jti = UUID.randomUUID().toString(); // 生成唯一 ID
-        claims.put(Claims.ID, jti); // 將 JTI 放入 claims
+        String jti = UUID.randomUUID().toString();
+        claims.put(Claims.ID, jti);
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION))
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
-    // 驗證 token
-    public Boolean validateToken(String token, UserDetails userDetails) {
+    public Boolean validateToken(String token, org.springframework.security.core.userdetails.UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
