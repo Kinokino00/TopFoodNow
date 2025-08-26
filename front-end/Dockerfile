@@ -1,12 +1,10 @@
-# 使用 Node.js 20-alpine 作為構建環境，它是一個輕量級的 Linux 發行版
+# --- 階段一：構建前端專案 (Build Stage) ---
 FROM node:20-alpine AS builder
-
-ARG VITE_API_BASE_URL
 
 # 設置工作目錄
 WORKDIR /app
 
-# 將 package.json 和 pnpm-lock.yaml 複製到工作目錄，有助於利用 Docker 緩存機制
+# 將 package.json 和 pnpm-lock.yaml 複製到工作目錄
 COPY package.json pnpm-lock.yaml ./
 
 # 安裝 pnpm
@@ -20,19 +18,24 @@ COPY . .
 
 # 運行構建命令，生成靜態檔案
 RUN pnpm run build
-RUN echo "VITE_API_BASE_URL=${VITE_API_BASE_URL}" > .env.production
 
-# 階段二：使用一個輕量級的 Nginx 伺服器來運行靜態檔案
+# --- 階段二：運行 Nginx 伺服器 (Production Stage) ---
 FROM nginx:stable-alpine
 
-# 從構建階段複製構建好的靜態檔案
+# 從構建階段複製構建好的靜態檔案到 Nginx 的網站根目錄
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # 複製 Nginx 配置檔
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
-# 暴露 80 端口，這是 Nginx 預設的 HTTP 端口
+# 複製我們用來注入環境變數的啟動腳本
+COPY entrypoint.sh /entrypoint.sh
+
+# 給予該腳本執行權限
+RUN chmod +x /entrypoint.sh
+
+# 暴露 80 端口
 EXPOSE 80
 
-# 啟動 Nginx 服務
-CMD ["nginx", "-g", "daemon off;"]
+# 將容器的啟動指令改為執行我們的腳本
+ENTRYPOINT ["/entrypoint.sh"]

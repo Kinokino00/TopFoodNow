@@ -104,10 +104,9 @@ public class SecurityConfig {
 
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
-        String frontEndUrl = environment.getProperty("app.front-end-url", "http://localhost:4000");
         CorsConfiguration configuration = new CorsConfiguration();
         // 確保允許的源與您的前端應用保持一致
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:5173", "http://localhost:8080", "http://localhost:8081"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:4001", "http://localhost:5173", "http://localhost:8080", "http://localhost:8081"));
         // configuration.setAllowedOrigins(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // 允許所有頭部，包括 Authorization
