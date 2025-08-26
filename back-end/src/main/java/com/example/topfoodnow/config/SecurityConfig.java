@@ -37,16 +37,17 @@ import java.util.Optional;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     private final UserRepository userRepository;
-//    private final CorsConfigurationSource corsConfigurationSource;
+    // private final CorsConfigurationSource corsConfigurationSource;
     private final DebugCorsFilter debugCorsFilter;
     private final Environment environment;
 
     public SecurityConfig(UserRepository userRepository, DebugCorsFilter debugCorsFilter, Environment environment) {
         this.userRepository = userRepository;
-//        this.corsConfigurationSource = corsConfigurationSource;
+        // this.corsConfigurationSource = corsConfigurationSource;
         this.debugCorsFilter = debugCorsFilter;
         this.environment = environment;
     }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -64,34 +65,38 @@ public class SecurityConfig {
                     user.getEmail(),
                     user.getPassword(),
                     user.getEnabled(),
-                    true,   // 帳戶是否未過期
+                    true, // 帳戶是否未過期
                     true, // 憑證是否未過期
-                    true,   // 帳戶是否未鎖定
-                    Arrays.asList(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName().toUpperCase()))
-            );
+                    true, // 帳戶是否未鎖定
+                    Arrays.asList(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName().toUpperCase())));
         };
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtRequestFilter jwtRequestFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtRequestFilter jwtRequestFilter)
+            throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/auth/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/auth/**")
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/store/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/store-categories/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/recommend/user/{userId}", "/api/recommend/{userId}/{storeId}", "/api/recommend/all").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/recommend/user/{userId}",
+                                "/api/recommend/{userId}/{storeId}", "/api/recommend/all")
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
-                        //.anyRequest().permitAll()
+                // .anyRequest().permitAll()
                 )
                 // 配置會話管理為無狀態 (適用於 JWT)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
@@ -106,7 +111,8 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // 確保允許的源與您的前端應用保持一致
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:4001", "http://localhost:5173", "http://localhost:8080", "http://localhost:8081"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4000", "http://localhost:4001",
+                "http://localhost:5173", "http://localhost:8080", "http://localhost:8080"));
         // configuration.setAllowedOrigins(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // 允許所有頭部，包括 Authorization
