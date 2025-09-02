@@ -53,16 +53,21 @@ jobs:
           username: ${{ secrets.TOPFOODNOW_EC2_USERNAME }}
           key: ${{ secrets.TOPFOODNOW_EC2_KEY }}
           script: |
-            # 1. Navigate to the project directory
-            cd /home/azureuser/TopFoodNow
+            # 1. 進入主目錄
+            cd /home/azureuser/
 
-            # 2. Pull the latest code from your GitHub repository
-            # This command requires your VM to be configured with SSH keys to access the repo
-            git pull
+            # 2. 移除舊的專案資料夾
+            rm -rf TopFoodNow
 
-            # 3. Stop and remove old containers and images
-            sudo docker compose down --rmi all
+            # 3. 使用 PAT 來 clone 整個倉庫
+            # 這裡需要你先在 GitHub 建立一個 Personal Access Token 並存入 secrets
+            git clone https://x-oauth-basic:${{ secrets.TOKEN }}@github.com/Kinokino00/TopFoodNow.git TopFoodNow
 
-            # 4. Rebuild and restart the services
-            # The --build flag will now work because the files are present
-            sudo docker compose up -d --build
+            # 4. 進入專案目錄
+            cd TopFoodNow
+
+            # 5. 停止並移除舊的容器
+            sudo docker compose down
+
+            # 6. 重新建置並啟動服務
+            sudo docker compose up -d --build --force-recreate
