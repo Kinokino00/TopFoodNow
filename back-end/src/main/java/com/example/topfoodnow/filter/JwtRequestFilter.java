@@ -1,7 +1,7 @@
 package com.example.topfoodnow.filter;
 
-import com.example.topfoodnow.service.JwtBlacklistService;
-import com.example.topfoodnow.util.JwtUtil;
+import com.example.topfoodnow.service.jwtblacklist.JwtBlacklistService;
+import com.example.topfoodnow.utils.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;

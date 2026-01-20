@@ -1,7 +1,7 @@
 package com.example.topfoodnow.config;
 
-import com.example.topfoodnow.model.UserModel;
-import com.example.topfoodnow.repository.UserRepository;
+import com.example.topfoodnow.infra.user.User;
+import com.example.topfoodnow.infra.user.UserRepository;
 import com.example.topfoodnow.filter.JwtRequestFilter;
 import com.example.topfoodnow.filter.DebugCorsFilter;
 import org.springframework.core.env.Environment;
@@ -19,7 +19,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -56,11 +55,11 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return email -> {
-            Optional<UserModel> userOptional = userRepository.findByEmail(email);
+            Optional<User> userOptional = userRepository.findByEmail(email);
             if (userOptional.isEmpty() || !userOptional.get().getEnabled()) {
                 throw new UsernameNotFoundException("用戶未找到或未啟用: " + email);
             }
-            UserModel user = userOptional.get();
+            User user = userOptional.get();
             return new org.springframework.security.core.userdetails.User(
                     user.getEmail(),
                     user.getPassword(),
