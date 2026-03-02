@@ -1,13 +1,13 @@
 package com.example.topfoodnow.controller.recommend;
 
 import com.example.topfoodnow.infra.user.User;
-import com.example.topfoodnow.controller.recommend.request.RecommendRequest;
-import com.example.topfoodnow.controller.recommend.response.RecommendResponse;
+import com.example.topfoodnow.controller.recommend.request.UpdateRecommendRequest;
+import com.example.topfoodnow.controller.recommend.response.GetRecommendResponse;
 import com.example.topfoodnow.controller.recommend.request.CreateRecommendRequest;
 import com.example.topfoodnow.service.recommend.RecommendService;
 import com.example.topfoodnow.service.user.UserService;
-import com.example.topfoodnow.service.gcs.GcsService;
-import com.example.topfoodnow.controller.recommend.response.CustomPageResponse;
+import com.example.topfoodnow.service.filestorage.FileStorageService;
+import com.example.topfoodnow.controller.recommend.response.GetRecommendsPagedResponse;
 import com.example.topfoodnow.infra.store.StoreRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,7 +52,7 @@ public class RecommendController {
     private UserService userService;
 
     @Autowired
-    private GcsService gcsService;
+    private FileStorageService fileStorageService;
 
     @Autowired
     private StoreRepository storeRepository;
@@ -81,7 +81,7 @@ public class RecommendController {
     @Operation(summary = "所有餐廳推薦")
     @ApiResponse(responseCode = "200", description = "成功取得分頁推薦列表")
     @GetMapping("/all")
-    public ResponseEntity<CustomPageResponse<RecommendResponse>> getAllRecommends(
+    public ResponseEntity<GetRecommendsPagedResponse<GetRecommendResponse>> getAllRecommends(
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "id") String sortBy,
@@ -105,14 +105,14 @@ public class RecommendController {
 
         Pageable pageable = PageRequest.of(springPage, size, springSort);
 
-        Page<RecommendResponse> recommendPage = recommendService.findAllRecommendsPaged(pageable, searchTerm);
+        Page<GetRecommendResponse> recommendPage = recommendService.findAllRecommendsPaged(pageable, searchTerm);
 
-        CustomPageResponse<RecommendResponse> response = new CustomPageResponse<>();
+        GetRecommendsPagedResponse<GetRecommendResponse> response = new GetRecommendsPagedResponse<>();
         response.setData(recommendPage.getContent());
         response.setTotalElements(recommendPage.getTotalElements());
         response.setTotalPages(recommendPage.getTotalPages());
 
-        CustomPageResponse.CustomPageableInfo pageableInfo = new CustomPageResponse.CustomPageableInfo();
+        GetRecommendsPagedResponse.CustomPageableInfo pageableInfo = new GetRecommendsPagedResponse.CustomPageableInfo();
         pageableInfo.setPageNumber(recommendPage.getNumber() + 1);
         pageableInfo.setPageSize(recommendPage.getSize());
 
@@ -137,7 +137,7 @@ public class RecommendController {
         @ApiResponse(responseCode = "404", description = "未找到指定店家")
     })
     @GetMapping("/store/{storeId}")
-    public ResponseEntity<List<RecommendResponse>> getRecommendsByStoreId(
+    public ResponseEntity<List<GetRecommendResponse>> getRecommendsByStoreId(
             @Parameter(description = "店家 ID", required = true, example = "1", in = ParameterIn.PATH)
             @PathVariable Integer storeId) {
         logger.info("請求取得店家 ID: {} 的所有推薦", storeId);
@@ -147,7 +147,7 @@ public class RecommendController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        List<RecommendResponse> recommends = recommendService.getRecommendsByStoreId(storeId);
+        List<GetRecommendResponse> recommends = recommendService.getRecommendsByStoreId(storeId);
         logger.info("成功取得店家 ID: {} 的所有推薦列表，共 {} 筆", storeId, recommends.size());
         return ResponseEntity.ok(recommends);
     }
@@ -160,7 +160,7 @@ public class RecommendController {
         @ApiResponse(responseCode = "404", description = "未找到指定用戶")
     })
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<RecommendResponse>> getRecommendsBySpecificUserId(
+    public ResponseEntity<List<GetRecommendResponse>> getRecommendsBySpecificUserId(
             @Parameter(description = "用戶 ID", required = true, example = "1", in = ParameterIn.PATH)
             @PathVariable Integer userId) {
         if (!userService.findById(userId).isPresent()) {
@@ -168,7 +168,7 @@ public class RecommendController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        List<RecommendResponse> recommends = recommendService.getRecommendsByUserId(userId);
+        List<GetRecommendResponse> recommends = recommendService.getRecommendsByUserId(userId);
         logger.info("成功取得用戶 ID: {} 的所有推薦列表", userId);
         return ResponseEntity.ok(recommends);
     }
@@ -181,14 +181,14 @@ public class RecommendController {
         @ApiResponse(responseCode = "404", description = "未找到該推薦")
     })
     @GetMapping("/{userId}/{storeId}")
-    public ResponseEntity<RecommendResponse> getSpecificUserRecommendDetail(
+    public ResponseEntity<GetRecommendResponse> getSpecificUserRecommendDetail(
             @Parameter(description = "用戶 ID", required = true, example = "1", in = ParameterIn.PATH)
             @PathVariable Integer userId,
             @Parameter(description = "店家 ID", required = true, example = "1", in = ParameterIn.PATH)
             @PathVariable Integer storeId) {
         logger.info("嘗試查看指定用戶 ID: {} 對店家 ID: {} 的推薦詳情", userId, storeId);
 
-        Optional<RecommendResponse> recommendOptional = recommendService.getRecommendByUserAndStoreId(userId, storeId);
+        Optional<GetRecommendResponse> recommendOptional = recommendService.getRecommendByUserAndStoreId(userId, storeId);
         if (recommendOptional.isPresent()) {
             logger.info("找到推薦，返回詳情");
             return ResponseEntity.ok(recommendOptional.get());
@@ -217,7 +217,7 @@ public class RecommendController {
         }
     )
     @PostMapping(value = "/add-recommend", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<RecommendResponse> addRecommendProcess(
+    public ResponseEntity<GetRecommendResponse> addRecommend(
             @ModelAttribute CreateRecommendRequest createRecommendRequest,
             Principal principal) {
         Integer currentUserId = getCurrentUserId(principal);
@@ -258,7 +258,7 @@ public class RecommendController {
             if (createRecommendRequest.getStorePhoto() != null && !createRecommendRequest.getStorePhoto().isEmpty()) {
                 for (MultipartFile file : createRecommendRequest.getStorePhoto()) {
                     if (!file.isEmpty()) {
-                        String photoUrl = gcsService.uploadFile(file, "recommend-images/");
+                        String photoUrl = fileStorageService.uploadFile(file, "recommend-images/");
                         uploadedPhotoUrls.add(photoUrl);
                     }
                 }
@@ -268,7 +268,7 @@ public class RecommendController {
                     .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到"));
 
             // 調用服務層，將上傳的 URL 列表傳遞給 Service
-            RecommendResponse createdRecommend = recommendService.addRecommend(createRecommendRequest, uploadedPhotoUrls, currentUser);
+            GetRecommendResponse createdRecommend = recommendService.addRecommend(createRecommendRequest, uploadedPhotoUrls, currentUser);
             logger.info("用戶 {} 新增推薦成功", currentUser.getEmail());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(createdRecommend);
@@ -297,7 +297,7 @@ public class RecommendController {
             required = true,
             content = @Content(
                 mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                schema = @Schema(implementation = RecommendRequest.class)
+                schema = @Schema(implementation = UpdateRecommendRequest.class)
             )
         ),
         responses = {
@@ -308,10 +308,10 @@ public class RecommendController {
         }
     )
     @PutMapping(value = "/{recommendId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<RecommendResponse> updateRecommendProcess(
+    public ResponseEntity<GetRecommendResponse> updateRecommend(
             @Parameter(description = "URL 路徑中的推薦ID", required = true, in = ParameterIn.PATH)
             @PathVariable("recommendId") Integer recommendId,
-            @ModelAttribute RecommendRequest recommendRequest,
+            @ModelAttribute UpdateRecommendRequest recommendRequest,
             @Parameter(description = "希望保留的現有圖片URL的JSON字符串", example = "[\"url1\",\"url2\"]")
             @RequestParam(value = "retainedPhotoUrls", required = false) String retainedPhotoUrlsJson,
             Principal principal) {
@@ -364,7 +364,7 @@ public class RecommendController {
             if (recommendRequest.getStorePhoto() != null && !recommendRequest.getStorePhoto().isEmpty()) {
                 for (MultipartFile file : recommendRequest.getStorePhoto()) {
                     if (!file.isEmpty()) {
-                        String photoUrl = gcsService.uploadFile(file, "recommend-images/");
+                        String photoUrl = fileStorageService.uploadFile(file, "recommend-images/");
                         newUploadedPhotoUrls.add(photoUrl);
                     }
                 }
@@ -373,7 +373,7 @@ public class RecommendController {
             User currentUser = userService.findById(currentUserId)
                     .orElseThrow(() -> new EntityNotFoundException("當前用戶不存在或未找到"));
 
-            RecommendResponse updatedRecommend = recommendService.updateRecommend(
+            GetRecommendResponse updatedRecommend = recommendService.updateRecommend(
                     recommendId,
                     recommendRequest,
                     newUploadedPhotoUrls,
@@ -409,7 +409,7 @@ public class RecommendController {
         }
     )
     @DeleteMapping("/{storeId}")
-    public ResponseEntity<Void> deleteRecommendProcess(
+    public ResponseEntity<Void> deleteRecommend(
             @Parameter(description = "店家ID", required = true, in = ParameterIn.PATH)
             @PathVariable("storeId") Integer storeId,
             Principal principal) {

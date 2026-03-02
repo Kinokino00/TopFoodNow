@@ -1,12 +1,14 @@
 package com.example.topfoodnow.service.category.impl;
 
-import com.example.topfoodnow.controller.category.response.CategoryResponse;
+import com.example.topfoodnow.controller.category.response.GetAllCategoriesData;
 import com.example.topfoodnow.infra.category.Category;
 import com.example.topfoodnow.infra.category.CategoryRepository;
 import com.example.topfoodnow.service.category.CategoryService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
@@ -17,47 +19,43 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<CategoryResponse> getAllCategories() {
+  @Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.DEFAULT,
+          rollbackFor = Exception.class)
+    public List<GetAllCategoriesData> getAllCategories() {
         return categoryRepository.findAllByOrderByIdAsc().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional(readOnly = true)
-    public Optional<CategoryResponse> getCategoryById(Integer id) {
+    public Optional<GetAllCategoriesData> getCategoryById(Integer id) {
         return categoryRepository.findById(id).map(this::convertToDto);
     }
 
-    @Override
     @Transactional
-    public CategoryResponse createCategory(CategoryResponse categoryResponse) {
-        if (categoryRepository.findByCategoryName(categoryResponse.getCategoryName()).isPresent()) {
-            throw new IllegalArgumentException("分類名稱已存在：" + categoryResponse.getCategoryName());
+    public GetAllCategoriesData createCategory(GetAllCategoriesData getAllCategoriesData) {
+        if (categoryRepository.findByCategoryName(getAllCategoriesData.getCategoryName()).isPresent()) {
+            throw new IllegalArgumentException("分類名稱已存在：" + getAllCategoriesData.getCategoryName());
         }
-        Category category = convertToEntity(categoryResponse);
+        Category category = convertToEntity(getAllCategoriesData);
         category.setId(null);
         return convertToDto(categoryRepository.save(category));
     }
 
-    @Override
     @Transactional
-    public CategoryResponse updateCategory(Integer id, CategoryResponse categoryResponse) {
+    public GetAllCategoriesData updateCategory(Integer id, GetAllCategoriesData getAllCategoriesData) {
         Category existingCategory = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("分類未找到，ID: " + id));
 
-        if (!existingCategory.getCategoryName().equals(categoryResponse.getCategoryName()) &&
-                categoryRepository.findByCategoryName(categoryResponse.getCategoryName()).isPresent()) {
-            throw new IllegalArgumentException("分類名稱已存在：" + categoryResponse.getCategoryName());
+        if (!existingCategory.getCategoryName().equals(getAllCategoriesData.getCategoryName()) &&
+                categoryRepository.findByCategoryName(getAllCategoriesData.getCategoryName()).isPresent()) {
+            throw new IllegalArgumentException("分類名稱已存在：" + getAllCategoriesData.getCategoryName());
         }
 
-        existingCategory.setCategoryName(categoryResponse.getCategoryName());
+        existingCategory.setCategoryName(getAllCategoriesData.getCategoryName());
         return convertToDto(categoryRepository.save(existingCategory));
     }
 
-    @Override
     @Transactional
     public void deleteCategory(Integer id) {
         if (!categoryRepository.existsById(id)) {
@@ -66,14 +64,14 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.deleteById(id);
     }
 
-    private CategoryResponse convertToDto(Category model) {
-        CategoryResponse dto = new CategoryResponse();
+    private GetAllCategoriesData convertToDto(Category model) {
+        GetAllCategoriesData dto = new GetAllCategoriesData();
         dto.setId(model.getId());
         dto.setCategoryName(model.getCategoryName());
         return dto;
     }
 
-    private Category convertToEntity(CategoryResponse dto) {
+    private Category convertToEntity(GetAllCategoriesData dto) {
         Category entity = new Category();
         entity.setId(dto.getId());
         entity.setCategoryName(dto.getCategoryName());

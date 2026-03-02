@@ -2,13 +2,14 @@ package com.example.topfoodnow.controller.user;
 
 import com.example.topfoodnow.infra.user.User;
 import com.example.topfoodnow.controller.user.request.LoginRequest;
+import com.example.topfoodnow.controller.user.request.RegisterRequest;
 import com.example.topfoodnow.controller.user.request.ForgotPasswordRequest;
+import com.example.topfoodnow.controller.user.request.UpdateUserProfileRequest;
 import com.example.topfoodnow.service.user.UserService;
 import com.example.topfoodnow.service.jwtblacklist.JwtBlacklistService;
-import com.example.topfoodnow.controller.user.response.RoleResponse;
-import com.example.topfoodnow.controller.user.request.UpdateUserProfileRequest;
-import com.example.topfoodnow.controller.user.response.UserProfileResponse;
-import com.example.topfoodnow.controller.user.request.UserRegisterRequest;
+import com.example.topfoodnow.controller.user.response.LoginResponse;
+import com.example.topfoodnow.controller.user.response.GetUserProfileResponse;
+import com.example.topfoodnow.controller.user.request.LogoutRequest;
 import com.example.topfoodnow.utils.JwtUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -86,7 +87,7 @@ public class UserController {
             required = true,
             content = @Content(
                 mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                schema = @Schema(implementation = UserRegisterRequest.class)
+                schema = @Schema(implementation = RegisterRequest.class)
             )
         ),
         responses = {
@@ -96,7 +97,7 @@ public class UserController {
         }
     )
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> registerProcess(@Valid @ModelAttribute UserRegisterRequest requestDTO, BindingResult bindingResult) {
+    public ResponseEntity<String> register(@Valid @ModelAttribute RegisterRequest requestDTO, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             logger.warn("註冊表單驗證失敗，錯誤數量: {}", bindingResult.getErrorCount());
             return ResponseEntity.badRequest().body("註冊數據無效: " + bindingResult.getAllErrors().get(0).getDefaultMessage());
@@ -138,11 +139,11 @@ public class UserController {
         }
     )
     @PostMapping("/login")
-    public ResponseEntity<RoleResponse> loginProcess(@Valid @RequestBody LoginRequest loginRequest,
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest,
                                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             logger.warn("登入請求數據無效");
-            return ResponseEntity.badRequest().body(new RoleResponse(false, "登入數據無效", null, null));
+            return ResponseEntity.badRequest().body(new LoginResponse());
         }
 
         try {
@@ -153,11 +154,11 @@ public class UserController {
         } catch (DisabledException e) {
             logger.warn("登入嘗試失敗：用戶 {} 帳戶未啟用", loginRequest.getEmail());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new RoleResponse(false, "您的帳戶尚未啟用，請檢查您的信箱完成驗證", null, null));
+                    .body(new LoginResponse());
         } catch (BadCredentialsException e) {
             logger.warn("登入嘗試失敗：Email 或密碼不正確，嘗試登入的 Email: {}", loginRequest.getEmail());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new RoleResponse(false, "信箱或密碼不正確，請再試一次", null, null));
+                    .body(new LoginResponse());
         }
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
@@ -167,7 +168,7 @@ public class UserController {
                 .orElseThrow(() -> new EntityNotFoundException("User not found after successful authentication."));
 
         logger.info("用戶 {} 登入成功，已生成 JWT Token 並回傳用戶資訊", loginRequest.getEmail());
-        return ResponseEntity.ok(new RoleResponse(true, "登入成功", jwt, user));
+        return ResponseEntity.ok(new LoginResponse());
     }
     // endregion
 
@@ -288,7 +289,7 @@ public class UserController {
         ),
         responses = {
             @ApiResponse(responseCode = "200", description = "用戶資料更新成功",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = UserProfileResponse.class))),
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GetUserProfileResponse.class))),
             @ApiResponse(responseCode = "400", description = "請求數據無效"),
             @ApiResponse(responseCode = "401", description = "未經認證"),
             @ApiResponse(responseCode = "404", description = "用戶不存在"),
@@ -296,7 +297,7 @@ public class UserController {
         }
     )
     @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<UserProfileResponse> updateProfile(@Valid @ModelAttribute UpdateUserProfileRequest updateDTO,
+    public ResponseEntity<GetUserProfileResponse> updateUserProfile(@Valid @ModelAttribute UpdateUserProfileRequest updateDTO,
                                                              BindingResult bindingResult,
                                                              Principal principal) {
         Integer currentUserId = getCurrentUserId(principal);
@@ -314,7 +315,7 @@ public class UserController {
             User updatedUser = userService.updateProfile(currentUserId, updateDTO); // 調用更新後的 Service 方法
             logger.info("用戶 ID {} 成功更新個人資料", currentUserId);
 
-            UserProfileResponse responseDTO = new UserProfileResponse();
+            GetUserProfileResponse responseDTO = new GetUserProfileResponse();
             responseDTO.setId(updatedUser.getId());
             responseDTO.setEmail(updatedUser.getEmail());
             responseDTO.setName(updatedUser.getName());
@@ -344,17 +345,17 @@ public class UserController {
             @ApiResponse(
                 responseCode = "200", description = "成功取得用戶資料",
                 content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                schema = @Schema(implementation = UserProfileResponse.class))),
+                schema = @Schema(implementation = GetUserProfileResponse.class))),
             @ApiResponse(responseCode = "404", description = "未找到用戶")
         }
     )
     @GetMapping("/public/{userId}")
-    public ResponseEntity<UserProfileResponse> getPublicUserProfile(
+    public ResponseEntity<GetUserProfileResponse> getPublicUserProfile(
             @Parameter(description = "用戶 ID", required = true, example = "1")
             @PathVariable Integer userId) {
         logger.info("請求取得公開用戶 ID: {} 的個人資料", userId);
         try {
-            UserProfileResponse userProfile = userService.getUserProfileForPublicRecommend(userId);
+            GetUserProfileResponse userProfile = userService.getUserProfileForPublicRecommend(userId);
             return ResponseEntity.ok(userProfile);
         } catch (EntityNotFoundException e) {
             logger.error("取得公開個人資料失敗：{}", e.getMessage());
@@ -395,8 +396,9 @@ public class UserController {
         }
     )
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestBody String token) {
+    public ResponseEntity<String> logout(@RequestBody LogoutRequest request) {
         // 驗證 Token 是否為空
+        String token = request.getToken();
         if (token == null || token.isEmpty()) {
             return ResponseEntity.badRequest().body("登出失敗：未提供 Token");
         }

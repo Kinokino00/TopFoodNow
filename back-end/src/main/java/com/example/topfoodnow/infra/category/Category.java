@@ -5,26 +5,28 @@ import com.example.topfoodnow.infra.store.Store;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
+
 import java.util.Set;
 import java.util.HashSet;
 
+@Getter
+@Setter
+@DynamicUpdate
 @Entity
-@Table(name = "category")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Schema(description = "餐廳類別")
+// TODO table名改大駝峰
+@Table(name = "category", schema = "dbo")
 public class Category {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(description = "餐廳類別ID", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
-    private Integer id;
+    @Column(name = "id")
+    private int id;
 
-    @Column(name = "name", nullable = false, unique = true)
-    @Schema(name = "categoryName", description = "餐廳類別名稱", example = "中式料理")
+    @Column(name = "name")
     private String categoryName;
 
     // 多對多關聯到 RecommendModel

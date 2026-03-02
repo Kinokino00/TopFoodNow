@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface StoreCategoryRepository extends JpaRepository<StoreCategory, StoreCategoryPK> {
     // 根據 storeId 查找所有分類
     List<StoreCategory> findById_StoreId(Integer storeId);
